@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>비문학 독해 연습</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <p class="eyebrow">READING &amp; LOGIC PRACTICE</p>
+    <h1>비문학 독해 연습</h1>
+    <p class="subtitle">시간 안에 지문을 읽고 문제를 풀어 보세요. 중요한 부분은 밑줄이나 형광펜으로 표시할 수 있어요.</p>
+    <div id="xp-widget" class="xp-widget">
+      <span id="xp-level-badge" class="xp-level-badge">Lv.1</span>
+      <div class="xp-widget-body">
+        <span id="xp-title" class="xp-title">글자 탐험가</span>
+        <div class="xp-bar"><div id="xp-bar-fill" class="xp-bar-fill"></div></div>
+        <span id="xp-progress-text" class="xp-progress-text">0 / 50 XP</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="steps-nav" aria-label="진행 단계">
+    <span class="step" data-step="select">01&nbsp;지문 선택</span>
+    <span class="step" data-step="solve">02&nbsp;문제 풀이</span>
+    <span class="step" data-step="result">03&nbsp;채점 결과</span>
+  </nav>
+
+  <main id="app">
+    <!-- 1) 지문 선택 화면 -->
+    <section id="screen-select" class="screen">
+      <h2>지문을 선택하세요</h2>
+      <p class="level-widget-label">학교급을 골라 보세요</p>
+      <div id="level-filter" class="level-filter" role="tablist" aria-label="학교급 선택">
+        <button type="button" class="level-btn active" data-level="all">
+          <span class="level-btn-icon" aria-hidden="true">📚</span>
+          <span class="level-btn-text">전체</span>
+        </button>
+        <button type="button" class="level-btn" data-level="초등">
+          <span class="level-btn-icon" aria-hidden="true">🧒</span>
+          <span class="level-btn-text">초등학교</span>
+        </button>
+        <button type="button" class="level-btn" data-level="중학">
+          <span class="level-btn-icon" aria-hidden="true">📘</span>
+          <span class="level-btn-text">중학교</span>
+        </button>
+        <button type="button" class="level-btn" data-level="고등">
+          <span class="level-btn-icon" aria-hidden="true">🎓</span>
+          <span class="level-btn-text">고등학교</span>
+        </button>
+      </div>
+      <div id="passage-list" class="passage-list"></div>
+    </section>
+
+
+    <!-- 2) 독해/풀이 화면 -->
+    <section id="screen-solve" class="screen hidden">
+      <div class="solve-topbar">
+        <button id="btn-back" class="btn btn-ghost" type="button">← 목록으로</button>
+        <div class="timer-wrap">
+          <span class="timer-label">남은 시간</span>
+          <span id="timer-display" class="timer-display">00:00</span>
+        </div>
+      </div>
+
+      <div class="toolbar" id="mark-toolbar">
+        <span class="toolbar-label">표시 도구</span>
+        <button type="button" class="tool-btn tool-highlight-yellow" data-tool="highlight-yellow" title="형광펜(노랑)">형광펜</button>
+        <button type="button" class="tool-btn tool-highlight-green" data-tool="highlight-green" title="형광펜(초록)">형광펜</button>
+        <button type="button" class="tool-btn tool-underline" data-tool="underline" title="밑줄">밑줄</button>
+        <button type="button" class="tool-btn tool-erase" data-tool="erase" title="표시 지우기">지우개</button>
+        <span class="toolbar-hint">지문에서 드래그로 범위를 선택한 뒤 버튼을 눌러 적용해요.</span>
+      </div>
+
+      <div class="solve-body">
+        <div class="passage-wrap">
+          <div id="passage-controls" class="passage-controls hidden">
+            <button id="btn-peek-passage" class="btn btn-ghost btn-small" type="button">지문 다시 보기</button>
+          </div>
+          <div class="passage-box">
+            <article id="passage-content" class="passage-content"></article>
+            <div id="passage-overlay" class="passage-overlay hidden">
+              <span class="overlay-icon" aria-hidden="true">🔒</span>
+              <p>문제를 푸는 중에는 지문이 가려져요.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="question-panel">
+          <h3 id="passage-title"></h3>
+
+          <div id="panel-intro" class="panel-intro">
+            <p class="panel-intro-text">지문을 충분히 읽었다면 아래 버튼을 눌러 문제를 풀어 보세요. 문제 풀이를 시작하면 지문이 흐리게 가려져요.</p>
+            <button id="btn-start-solve" class="btn btn-primary" type="button">문제 풀기 시작</button>
+          </div>
+
+          <div id="panel-questions" class="hidden">
+            <div class="q-progress">
+              <span id="q-progress-text" class="q-progress-text">1 / 1</span>
+              <div class="q-progress-bar"><div id="q-progress-fill" class="q-progress-fill"></div></div>
+            </div>
+
+            <div id="question-list"></div>
+
+            <div class="q-nav">
+              <button id="btn-prev" class="btn btn-ghost" type="button">← 이전 문제</button>
+              <button id="btn-next" class="btn btn-primary" type="button">다음 문제 →</button>
+              <button id="btn-submit" class="btn btn-primary hidden" type="button">채점하기</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3) 결과 화면 -->
+    <section id="screen-result" class="screen hidden">
+      <h2>채점 결과</h2>
+      <div id="result-summary" class="result-summary"></div>
+      <div id="result-xp" class="result-xp"></div>
+      <div id="result-detail" class="result-detail"></div>
+      <div class="result-actions">
+        <button id="btn-retry" class="btn btn-ghost" type="button">다시 풀기</button>
+        <button id="btn-list" class="btn btn-primary" type="button">목록으로</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
