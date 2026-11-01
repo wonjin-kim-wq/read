@@ -19,4 +19,6 @@ jobs:
       - name: Validate passages and reference logic
         run: python3 -m unittest discover -s tests -v
       - name: Check JavaScript syntax
-        run: node --check assets/js/app.js
+        run: |
+          node --check assets/js/app.js
+          node --check assets/js/intro.js

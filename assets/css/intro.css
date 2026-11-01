@@ -1,0 +1,209 @@
+/* 읽는 힘 — 첫 진입 인트로 (assets/js/intro.js) */
+
+:root {
+  --intro-paper: #ffffff;
+  --intro-ink: #1a1a1a;
+  --intro-grid: #c97870;
+  --intro-guide: rgba(201, 120, 112, 0.28);
+  --intro-marker: #f8df79;
+  --intro-font: "Nanum Pen Script", "Gaegu", "Apple SD Gothic Neo", cursive;
+  /* 원고지 한 칸: 네 칸과 두 문구가 작은 화면에서도 한 화면에 들어가도록 높이·너비 모두 고려 */
+  --intro-cell: clamp(54px, min(12.5vh, 22vw), 96px);
+}
+
+/* 자동 재생할 탭: 인트로가 붙기 전까지 메인 화면을 흰 화면으로 가린다 */
+html.intro-pending body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: var(--intro-paper);
+  z-index: 999;
+}
+
+/* 재생 중 배경 스크롤 방지 */
+html.intro-active,
+html.intro-active body,
+html.intro-pending,
+html.intro-pending body {
+  overflow: hidden;
+}
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--intro-paper);
+  color: var(--intro-ink);
+  font-family: var(--intro-font);
+  overflow: hidden;
+  overscroll-behavior: contain;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.intro.is-leaving {
+  animation: intro-leave var(--intro-exit, 700ms) ease forwards;
+  pointer-events: none;
+}
+
+@keyframes intro-leave {
+  to { opacity: 0; visibility: hidden; }
+}
+
+.intro-skip {
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top));
+  right: calc(14px + env(safe-area-inset-right));
+  z-index: 3;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(26, 26, 26, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #4a4744;
+  font: 600 0.88rem/1 "MaruBuri", "Apple SD Gothic Neo", sans-serif;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.intro-skip:hover { color: var(--intro-ink); border-color: rgba(26, 26, 26, 0.45); }
+.intro-skip:focus-visible { outline: 2px solid var(--intro-grid); outline-offset: 3px; }
+
+.intro-stage {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 0 16px;
+}
+
+/* ---------- 원고지 네 칸 (세로 연결) ---------- */
+.intro-sheet {
+  display: flex;
+  flex-direction: column;
+  border: 1.5px solid var(--intro-grid);
+  background: var(--intro-paper);
+}
+
+.intro-cell {
+  position: relative;
+  width: var(--intro-cell);
+  height: var(--intro-cell);
+  background:
+    linear-gradient(var(--intro-guide), var(--intro-guide)) center / 1px 100% no-repeat,
+    linear-gradient(var(--intro-guide), var(--intro-guide)) center / 100% 1px no-repeat;
+}
+
+.intro-cell + .intro-cell { border-top: 1.5px solid var(--intro-grid); }
+
+.intro-glyph {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--intro-cell) * 0.78);
+  line-height: 1;
+  padding-top: calc(var(--intro-cell) * 0.06);
+  will-change: transform, filter, opacity;
+}
+
+/* ---------- 문구 ---------- */
+.intro-line {
+  margin: 0;
+  text-align: center;
+  line-height: 1.25;
+  text-wrap: balance;
+  max-width: 100%;
+}
+
+.intro-line1 {
+  margin-top: calc(var(--intro-cell) * 0.42);
+  font-size: clamp(26px, 6.4vw, 46px);
+}
+
+.intro-line2 {
+  margin-top: calc(var(--intro-cell) * 0.14);
+  font-size: clamp(19px, 4.7vw, 33px);
+  color: #2b2b2b;
+}
+
+.intro-mark {
+  position: relative;
+  display: inline-block;
+  padding: 0 0.12em;
+}
+
+.intro-mark-text { position: relative; }
+
+.intro-mark-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.1em;
+  height: 0.42em;
+  background: var(--intro-marker);
+  border-radius: 0.2em 0.35em 0.3em 0.15em;
+  transform-origin: left center;
+  transform: scaleX(0);
+  opacity: 0.9;
+}
+
+/* ---------- 날아오는 작은 글자 ---------- */
+.intro-swarm {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.intro-bit {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: -0.6em 0 0 -0.5em;
+  color: var(--intro-ink);
+  opacity: 0;
+  will-change: transform, filter, opacity;
+}
+
+/* 재생 전: 원고지와 문구는 숨겨 두고 타임라인이 차례로 드러낸다 */
+.intro:not(.is-playing):not(.is-static) .intro-stage { visibility: hidden; }
+.intro.is-playing .intro-sheet { clip-path: inset(0 0 100% 0); }
+.intro.is-playing .intro-glyph,
+.intro.is-playing .intro-line { opacity: 0; }
+
+/* 모션 줄이기 / 애니메이션 미지원: 완성 화면만 짧게 */
+.intro.is-static .intro-mark-bar { transform: none; }
+.intro.is-static .intro-stage { animation: intro-fade 0.35s ease both; }
+
+@keyframes intro-fade {
+  from { opacity: 0; }
+}
+
+/* ---------- 개발용 인트로 다시 보기 버튼 ---------- */
+.intro-replay {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px dashed rgba(201, 120, 112, 0.7);
+  border-radius: 999px;
+  background: transparent;
+  color: #a85b53;
+  font: 600 0.78rem/1 var(--font-main, sans-serif);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.intro-replay:hover { background: rgba(201, 120, 112, 0.08); }
+.intro-replay:focus-visible { outline: 2px solid #c97870; outline-offset: 2px; }
+
+@media (max-height: 520px) and (orientation: landscape) {
+  :root { --intro-cell: clamp(40px, 15vh, 64px); }
+  .intro-line1 { font-size: clamp(20px, 6vh, 32px); }
+  .intro-line2 { font-size: clamp(16px, 4.6vh, 24px); }
+}

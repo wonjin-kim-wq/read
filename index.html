@@ -2,36 +2,59 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>비문학 독해 연습</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>읽는 힘 — 비문학 독해 연습</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap">
 <link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/intro.css">
+<!-- 첫 진입 인트로: 메인 화면이 먼저 비치지 않도록 head에서 동기 로드 -->
+<script src="assets/js/intro.js"></script>
 </head>
-<body>
+<body data-screen="select">
   <header class="app-header">
-    <p class="eyebrow">READING &amp; LOGIC PRACTICE</p>
-    <h1>비문학 독해 연습</h1>
-    <p class="subtitle">시간 안에 지문을 읽고 문제를 풀어 보세요. 중요한 부분은 밑줄이나 형광펜으로 표시할 수 있어요.</p>
-    <div id="xp-widget" class="xp-widget">
-      <span id="xp-level-badge" class="xp-level-badge">Lv.1</span>
-      <div class="xp-widget-body">
-        <span id="xp-title" class="xp-title">글자 탐험가</span>
-        <div class="xp-bar"><div id="xp-bar-fill" class="xp-bar-fill"></div></div>
-        <span id="xp-progress-text" class="xp-progress-text">0 / 50 XP</span>
+    <div class="app-topbar">
+      <div class="brand">
+        <span class="brand-sheet" aria-hidden="true"><span>읽</span><span>는</span><span></span><span>힘</span></span>
+        <span class="brand-text">
+          <strong>읽는 힘</strong>
+          <small>비문학 독해 연습</small>
+        </span>
       </div>
+      <div id="topbar-actions" class="topbar-actions">
+        <div id="xp-widget" class="xp-widget">
+          <span id="xp-level-badge" class="xp-level-badge">Lv.1</span>
+          <div class="xp-widget-body">
+            <span id="xp-title" class="xp-title">글자 탐험가</span>
+            <div class="xp-bar"><div id="xp-bar-fill" class="xp-bar-fill"></div></div>
+            <span id="xp-progress-text" class="xp-progress-text">0 / 50 XP</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero">
+      <p class="eyebrow">READING &amp; LOGIC PRACTICE</p>
+      <h1><span class="hero-mark">하얀 건 종이, 검은 건 글씨?</span></h1>
+      <p class="subtitle">읽을 수 있다고 다 이해하는 것은 아니니까. 90초 안에 지문을 읽고 문제를 풀어 보세요. 중요한 부분은 밑줄이나 형광펜으로 표시할 수 있어요.</p>
     </div>
   </header>
 
   <nav class="steps-nav" aria-label="진행 단계">
-    <span class="step" data-step="select">01&nbsp;지문 선택</span>
-    <span class="step" data-step="solve">02&nbsp;문제 풀이</span>
-    <span class="step" data-step="result">03&nbsp;채점 결과</span>
+    <span class="step" data-step="select"><b>01</b>지문 선택</span>
+    <span class="step" data-step="solve"><b>02</b>문제 풀이</span>
+    <span class="step" data-step="result"><b>03</b>채점 결과</span>
   </nav>
 
   <main id="app">
     <!-- 1) 지문 선택 화면 -->
     <section id="screen-select" class="screen">
-      <h2>지문을 선택하세요</h2>
-      <p class="level-widget-label">학교급을 골라 보세요</p>
+      <div class="screen-head">
+        <h2>지문을 선택하세요</h2>
+        <p class="level-widget-label">학교급을 골라 보세요</p>
+      </div>
       <div id="level-filter" class="level-filter" role="tablist" aria-label="학교급 선택">
         <button type="button" class="level-btn active" data-level="all">
           <span class="level-btn-icon" aria-hidden="true">📚</span>
@@ -66,11 +89,14 @@
 
       <div class="toolbar" id="mark-toolbar">
         <span class="toolbar-label">표시 도구</span>
-        <button type="button" class="tool-btn tool-highlight-yellow" data-tool="highlight-yellow" title="형광펜(노랑)">형광펜</button>
-        <button type="button" class="tool-btn tool-highlight-green" data-tool="highlight-green" title="형광펜(초록)">형광펜</button>
+        <button type="button" class="tool-btn tool-highlight-yellow" data-tool="highlight-yellow" title="형광펜(노랑)" aria-label="노란 형광펜">형광펜</button>
+        <button type="button" class="tool-btn tool-highlight-green" data-tool="highlight-green" title="형광펜(초록)" aria-label="초록 형광펜">형광펜</button>
         <button type="button" class="tool-btn tool-underline" data-tool="underline" title="밑줄">밑줄</button>
         <button type="button" class="tool-btn tool-erase" data-tool="erase" title="표시 지우기">지우개</button>
-        <span class="toolbar-hint">지문에서 드래그로 범위를 선택한 뒤 버튼을 눌러 적용해요.</span>
+        <span class="toolbar-hint">
+          <span class="hint-pointer">지문에서 드래그로 범위를 선택한 뒤 버튼을 눌러 적용해요.</span>
+          <span class="hint-touch">글자를 길게 눌러 범위를 선택한 뒤 버튼을 눌러요.</span>
+        </span>
       </div>
 
       <div class="solve-body">
@@ -126,7 +152,7 @@
     </section>
   </main>
 
-  <div id="toast" class="toast hidden"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
   <script src="assets/js/app.js"></script>
 </body>

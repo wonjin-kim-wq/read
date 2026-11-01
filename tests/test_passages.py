@@ -245,5 +245,50 @@ class TestLevelingSystem(unittest.TestCase):
         self.assertAlmostEqual(info["progressPercent"], 50.0)
 
 
+# ---------------- 첫 진입 인트로 ----------------
+# 브라우저 동작은 직접 확인해야 하므로, 여기서는 연결 상태와 시나리오 고정값만 정적으로 검사한다.
+
+INDEX_PATH = ROOT / "index.html"
+INTRO_JS_PATH = ROOT / "assets" / "js" / "intro.js"
+
+
+class TestIntroWiring(unittest.TestCase):
+    def setUp(self):
+        self.index = INDEX_PATH.read_text(encoding="utf-8")
+        self.intro = INTRO_JS_PATH.read_text(encoding="utf-8")
+
+    def test_index_references_existing_local_assets(self):
+        import re
+
+        refs = re.findall(r'(?:src|href)="((?!https?:|#)[^"]+)"', self.index)
+        self.assertIn("assets/js/intro.js", refs)
+        self.assertIn("assets/css/intro.css", refs)
+        for ref in refs:
+            with self.subTest(ref=ref):
+                self.assertTrue((ROOT / ref).is_file(), f"{ref} 파일이 없음")
+
+    def test_intro_loads_before_app(self):
+        self.assertLess(
+            self.index.index("assets/js/intro.js"),
+            self.index.index("assets/js/app.js"),
+            "인트로는 메인 화면보다 먼저 로드되어야 깜빡임이 없음",
+        )
+
+    def test_sheet_has_four_cells_with_blank_third(self):
+        self.assertIn('const CELLS = ["읽", "는", "", "힘"];', self.intro)
+
+    def test_lines_and_session_storage(self):
+        self.assertIn("하얀 건 종이, 검은 건 글씨?", self.intro)
+        self.assertIn("읽을 수 있다고 다 이해하는 것은 아니니까!", self.intro)
+        self.assertIn("sessionStorage", self.intro)
+        self.assertIn('storageKey: "readingIntroSeen"', self.intro)
+
+    def test_replay_button_hidden_by_default_outside_localhost(self):
+        self.assertIn('showReplayButton: "auto"', self.intro)
+
+    def test_respects_reduced_motion(self):
+        self.assertIn("prefers-reduced-motion", self.intro)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -72,6 +72,7 @@ const state = {
   levelFilter: "all",   // 지문 선택 화면의 난이도 필터
   solving: false,       // 문제 풀기 모드 여부 (true면 지문이 가려짐)
   peeking: false,       // 문제 풀기 중 잠깐 지문을 다시 보고 있는지 여부
+  savedRange: null,     // 모바일에서 도구 버튼을 누르는 순간 선택이 풀리는 것에 대비해 기억한 지문 선택 범위
   totalXp: loadTotalXp(),
 };
 
@@ -120,18 +121,20 @@ async function init() {
     state.passages = await res.json();
   } catch (err) {
     el.passageList.innerHTML =
-      '<p style="color:#e8513f">지문 데이터를 불러오지 못했어요. 페이지를 새로고침 해보세요.</p>';
+      '<p class="list-message error">지문 데이터를 불러오지 못했어요. 페이지를 새로고침 해보세요.</p>';
     console.error(err);
     return;
   }
   renderPassageList();
   renderXpWidget();
   bindGlobalEvents();
+  showScreen("select");
 }
 
 /* ---------------- 화면 전환 ---------------- */
 
 function showScreen(name) {
+  document.body.dataset.screen = name;
   el.screenSelect.classList.toggle("hidden", name !== "select");
   el.screenSolve.classList.toggle("hidden", name !== "solve");
   el.screenResult.classList.toggle("hidden", name !== "result");
@@ -148,22 +151,25 @@ function renderPassageList() {
     (p) => state.levelFilter === "all" || p.level === state.levelFilter
   );
   if (filtered.length === 0) {
-    el.passageList.innerHTML = '<p style="color:#8a7a63">해당 난이도의 지문이 아직 없어요.</p>';
+    el.passageList.innerHTML = '<p class="list-message">해당 난이도의 지문이 아직 없어요.</p>';
     return;
   }
-  filtered.forEach((p) => {
+  filtered.forEach((p, i) => {
     const card = document.createElement("button");
     card.type = "button";
     card.className = "passage-card";
+    if (p.level) card.dataset.level = p.level;
     const timeLabel = formatMinSec(p.timeLimitSec);
     const levelBadge = p.level ? `<span class="badge badge-level">${escapeHtml(p.level)}</span>` : "";
     card.innerHTML = `
+      <span class="card-index" aria-hidden="true">${pad2(i + 1)}</span>
       <span class="badge-row">
         <span class="badge">${escapeHtml(p.category)}</span>
         ${levelBadge}
       </span>
       <h3>${escapeHtml(p.title)}</h3>
       <p class="meta">제한 시간 ${timeLabel} · 문제 ${p.questions.length}개</p>
+      <span class="card-cta" aria-hidden="true">읽기 시작 →</span>
     `;
     card.addEventListener("click", () => startPassage(p.id));
     el.passageList.appendChild(card);
@@ -194,6 +200,7 @@ function startPassage(id) {
 }
 
 function renderPassageContent(passage) {
+  state.savedRange = null;
   el.passageContent.innerHTML = "";
   passage.paragraphs.forEach((text) => {
     const p = document.createElement("p");
@@ -225,6 +232,8 @@ function togglePeekPassage() {
 function updatePassageVisibility() {
   const shouldBlur = state.solving && !state.peeking;
   el.passageContent.classList.toggle("blurred", shouldBlur);
+  el.screenSolve.classList.toggle("passage-hidden", shouldBlur);
+  if (shouldBlur) state.savedRange = null;
   el.passageOverlay.classList.toggle("hidden", !shouldBlur);
   if (el.btnPeekPassage) {
     el.btnPeekPassage.textContent = state.peeking ? "지문 가리기" : "지문 다시 보기";
@@ -339,7 +348,15 @@ function formatMinSec(totalSec) {
 
 function bindGlobalEvents() {
   el.toolbar.querySelectorAll(".tool-btn").forEach((btn) => {
+    // 데스크톱: 버튼을 누를 때 포커스가 옮겨 가며 지문 선택이 풀리지 않도록 한다.
+    btn.addEventListener("mousedown", (e) => e.preventDefault());
     btn.addEventListener("click", () => applyTool(btn.dataset.tool));
+  });
+
+  // 모바일(iOS·Android)은 버튼을 탭하는 순간 선택이 사라지므로, 선택이 바뀔 때마다 범위를 기억해 둔다.
+  document.addEventListener("selectionchange", rememberPassageSelection);
+  el.passageContent.addEventListener("pointerdown", () => {
+    state.savedRange = null;
   });
 
   el.levelFilter.querySelectorAll(".level-btn").forEach((btn) => {
@@ -374,15 +391,47 @@ function bindGlobalEvents() {
   });
 }
 
-function applyTool(tool) {
+function rememberPassageSelection() {
   const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-    showToast("먼저 지문에서 표시할 범위를 드래그로 선택하세요.");
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return;
+  const range = clipRangeToPassage(selection.getRangeAt(0));
+  if (range) state.savedRange = range;
+}
+
+/**
+ * 선택 범위 중 지문 안에 들어간 부분만 잘라 돌려준다.
+ * 모바일에서는 선택 핸들이 제목 등 지문 밖까지 쉽게 넘어가므로, 겹치는 부분만 표시한다.
+ */
+function clipRangeToPassage(range) {
+  const root = el.passageContent;
+  if (!range.intersectsNode(root)) return null;
+  const clipped = range.cloneRange();
+  if (!root.contains(range.startContainer)) clipped.setStart(root, 0);
+  if (!root.contains(range.endContainer)) clipped.setEnd(root, root.childNodes.length);
+  return clipped.collapsed ? null : clipped;
+}
+
+function getPassageRange() {
+  const selection = window.getSelection();
+  const hasLiveSelection = selection && selection.rangeCount > 0 && !selection.isCollapsed;
+  if (hasLiveSelection) {
+    const range = clipRangeToPassage(selection.getRangeAt(0));
+    if (range) return { range };
+  }
+  if (state.savedRange && !state.savedRange.collapsed && el.passageContent.contains(state.savedRange.commonAncestorContainer)) {
+    return { range: state.savedRange };
+  }
+  return { range: null, outside: hasLiveSelection };
+}
+
+function applyTool(tool) {
+  if (state.solving && !state.peeking) {
+    showToast("지문이 가려져 있어요. '지문 다시 보기'를 누른 뒤 표시하세요.");
     return;
   }
-  const range = selection.getRangeAt(0);
-  if (!el.passageContent.contains(range.commonAncestorContainer)) {
-    showToast("지문 영역 안에서만 표시할 수 있어요.");
+  const { range, outside } = getPassageRange();
+  if (!range) {
+    showToast(outside ? "지문 영역 안에서만 표시할 수 있어요." : "먼저 지문에서 표시할 범위를 선택하세요.");
     return;
   }
 
@@ -393,7 +442,9 @@ function applyTool(tool) {
       tool === "highlight-yellow" ? "hl-yellow" : tool === "highlight-green" ? "hl-green" : "hl-underline";
     markRange(range, className);
   }
-  selection.removeAllRanges();
+  state.savedRange = null;
+  const selection = window.getSelection();
+  if (selection) selection.removeAllRanges();
 }
 
 function markRange(range, className) {
@@ -512,7 +563,7 @@ function renderResult(passage, correctCount, details, isTimeout) {
       <p class="result-time ${isTimeout ? "timeout" : ""}">
         ${isTimeout ? "시간 종료로 자동 제출되었어요." : "시간 안에 제출을 완료했어요."}
       </p>
-      <p class="meta" style="margin:4px 0 0;color:#6b7280;">${escapeHtml(passage.title)}</p>
+      <p class="result-passage">${escapeHtml(passage.title)}</p>
     </div>
   `;
 
