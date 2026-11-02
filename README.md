@@ -20,8 +20,9 @@ API 키 등 민감한 값을 서버에서만 다루도록 구조화되어 있습
 
 ```text
 .
-├── app.py                       # Flask 백엔드: 정적 파일 서빙 + /api/passages
-├── requirements.txt             # Python 의존성 (Flask, requests)
+├── app.py                       # Flask 백엔드: 정적 파일 + /api/passages + /api/generate
+├── question_generator.py        # Gemini 문제 생성·검증 모듈
+├── requirements.txt             # Python 의존성 (Flask, requests, google-genai)
 ├── index.html                   # 앱 진입점
 ├── assets/
 │   ├── css/styles.css          # 화면 스타일
@@ -31,6 +32,7 @@ API 키 등 민감한 값을 서버에서만 다루도록 구조화되어 있습
 ├── data/passages.json          # 지문·문제·정답·해설 (서버가 읽어 API로 내려줌)
 ├── tests/test_passages.py      # 데이터 무결성 및 Python으로 재현한 로직 검증
 ├── tests/test_server.py        # Flask 백엔드(app.py) 라우트 검증
+├── tests/test_generate.py      # AI 문제 만들기 API 검증 (Gemini 모의 응답)
 └── .github/workflows/check.yml # 푸시·PR 자동 검증
 ```
 
@@ -52,12 +54,29 @@ python3 app.py
 
 배포 시 플랫폼이 `PORT` 환경변수를 주입하며, `app.py`는 `0.0.0.0`에 바인딩합니다.
 
-### 외부 API 연동
+### AI 문제 만들기 (Gemini)
 
-브라우저가 아니라 `app.py`(서버)에서 외부 API를 호출하도록 구조를 바꿔 두었습니다.
-API 키 등 민감한 값은 환경변수(`EXTERNAL_API_KEY`, `EXTERNAL_API_BASE_URL`)로 주입하고,
-`app.py`에 새 라우트(예: `/api/external/...`)를 추가해 해당 API를 호출한 뒤 결과만
-클라이언트로 내려주는 방식을 권장합니다. 이렇게 하면 키가 브라우저에 노출되지 않습니다.
+지문 선택 화면의 **문제 만들기** 탭에서 지문을 붙여 넣거나 PDF(5MB 이하)를 올리면,
+서버(`app.py` → `question_generator.py`)가 Google Gemini로 4지선다 독해 문제 5개를 만듭니다.
+만든 문제는 브라우저에 저장되어 다른 지문처럼 밑줄·형광펜을 그으며 풀 수 있고 XP도 쌓입니다.
+
+- AI 응답은 JSON으로 받아 코드로 검증합니다(보기 4개·중복 없음·정답 1개·근거 문장이 지문에 실제로 있는지). 통과한 문제가 3개 미만이면 실패로 처리합니다.
+- 같은 지문·같은 학교급을 다시 넣으면 저장된 문제를 재사용하고 횟수를 차감하지 않습니다.
+- 전화번호·이메일·주민번호가 보이는 글은 AI로 보내지 않습니다. 지문 안의 명령문은 지시로 취급하지 않도록 프롬프트에 명시했습니다.
+- 실패해도 다시 호출하지 않으며, 기존 학습 기능은 그대로 동작합니다.
+
+배포 환경변수(키는 코드·저장소에 넣지 않습니다):
+
+| 변수 | 기본값 | 설명 |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | 없음(필수) | Google AI Studio에서 발급한 키 |
+| `GEMINI_MODEL` | `gemini-flash-latest` | 사용할 모델. 무료 지원 모델은 AI Studio에서 확인 |
+| `GENERATE_DAILY_LIMIT_PER_USER` | `3` | 한 사용자(접속 주소)당 하루 생성 횟수 |
+| `GENERATE_DAILY_LIMIT_TOTAL` | `15` | 사이트 전체 하루 생성 횟수 |
+| `USAGE_DB_PATH` | `instance/usage.db` | 사용 횟수·생성 결과를 저장하는 SQLite 파일 |
+
+하루 기준은 Gemini 무료 한도와 같은 미국 태평양 시간 자정입니다.
+무료 한도는 Google이 예고 없이 바꿀 수 있으니 AI Studio에서 모델별 하루 요청 수(RPD)를 확인하고 `GENERATE_DAILY_LIMIT_TOTAL`을 그보다 작게 두세요.
 
 ## 첫 진입 인트로
 

@@ -509,6 +509,123 @@ body:not([data-screen="select"]) .app-header { padding-bottom: 12px; }
   background: linear-gradient(transparent 60%, var(--color-marker) 60%);
 }
 
+/* ---------- AI 문제 만들기 ---------- */
+.create-panel { margin-top: 20px; }
+.create-panel.hidden { display: none; }
+
+.create-head h3,
+.create-list-title {
+  margin: 0 0 4px;
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.create-head p {
+  margin: 0 0 14px;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
+
+.create-form {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.create-field { display: flex; flex-direction: column; gap: 6px; }
+
+.create-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text-soft);
+}
+
+.create-form textarea,
+.create-form select {
+  font: inherit;
+  color: var(--color-text);
+  background: var(--color-paper);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.create-form textarea {
+  font-size: 1rem;
+  line-height: 1.7;
+  resize: vertical;
+  min-height: 160px;
+}
+
+.create-form select { min-height: 44px; padding: 8px 12px; }
+
+.create-row {
+  display: flex;
+  align-items: center;
+  gap: 10px 14px;
+  flex-wrap: wrap;
+}
+
+.create-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  cursor: pointer;
+}
+
+/* 파일 입력은 시각적으로 숨기고, 키보드 포커스는 옆 버튼 모양으로 보여 준다 */
+.create-file input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.create-file input:focus-visible + .btn { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.create-file .btn { display: inline-flex; align-items: center; }
+
+.create-file-hint,
+.create-file-name,
+.create-quota,
+.create-note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+.create-file-name:empty,
+.create-status:empty { display: none; }
+
+.create-actions { justify-content: space-between; }
+
+.create-level { display: inline-flex; align-items: center; gap: 8px; }
+
+.create-status {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  background: var(--color-sunken);
+  color: var(--color-text-soft);
+}
+
+.create-status.busy { background: var(--color-marker); color: var(--color-text); }
+.create-status.success { background: rgba(61, 122, 88, 0.1); color: var(--color-success); }
+.create-status.error { background: rgba(192, 70, 58, 0.08); color: var(--color-danger); }
+
+.create-list-title { margin-top: 22px; }
+
+.passage-card .badge.badge-ai {
+  color: #fff;
+  background: var(--color-accent);
+  border-color: transparent;
+}
+
 /* ---------- 풀이 화면 ---------- */
 .solve-topbar {
   display: flex;
@@ -1038,7 +1155,12 @@ mark.hl-green.hl-underline { text-decoration: underline; }
   .result-score { font-size: 2.8rem; }
   .result-actions .btn { max-width: none; }
   .brand-sheet > span { width: 26px; height: 26px; font-size: 1.35rem; }
-  .level-filter { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .level-filter { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .level-btn-text { font-size: 0.74rem; word-break: keep-all; text-align: center; line-height: 1.25; }
+  .create-actions { flex-direction: column; align-items: stretch; }
+  .create-actions .btn { width: 100%; }
+  .create-level select { flex: 1; }
+  .create-form { padding: 14px; }
   .level-btn { flex-direction: column; justify-content: center; gap: 2px; padding: 8px 4px; border-radius: 14px; font-size: 0.78rem; }
 }
 

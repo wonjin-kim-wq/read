@@ -72,7 +72,49 @@
           <span class="level-btn-icon" aria-hidden="true">🎓</span>
           <span class="level-btn-text">고등학교</span>
         </button>
+        <button type="button" class="level-btn level-btn-create" data-level="create">
+          <span class="level-btn-icon" aria-hidden="true">✏️</span>
+          <span class="level-btn-text">문제 만들기</span>
+        </button>
       </div>
+
+      <!-- AI 문제 만들기: 지문(텍스트/PDF)을 넣으면 서버가 Gemini로 문제를 만든다 -->
+      <section id="create-panel" class="create-panel hidden" aria-labelledby="create-title">
+        <div class="create-head">
+          <h3 id="create-title">AI로 문제 만들기</h3>
+          <p>지문을 붙여 넣거나 PDF를 올리면 AI가 읽고 독해 문제 <span id="create-count">5</span>개를 만들어요. 만든 문제는 다른 지문처럼 밑줄·형광펜을 그으며 풀 수 있어요.</p>
+        </div>
+        <form id="create-form" class="create-form" novalidate>
+          <label class="create-field">
+            <span class="create-label">지문 붙여 넣기</span>
+            <textarea id="create-text" name="text" rows="7" maxlength="8000" placeholder="200자 이상 8,000자 이하의 비문학 지문을 붙여 넣으세요. 문단 사이는 빈 줄로 나눠 주세요."></textarea>
+          </label>
+          <div class="create-row">
+            <label class="create-file">
+              <input id="create-file" type="file" name="file" accept="application/pdf,.pdf">
+              <span class="btn btn-ghost btn-small" aria-hidden="true">PDF 올리기</span>
+              <span class="create-file-hint">또는 PDF(5MB 이하)를 올리세요. PDF를 고르면 PDF가 우선이에요.</span>
+            </label>
+            <p id="create-file-name" class="create-file-name" aria-live="polite"></p>
+          </div>
+          <div class="create-row create-actions">
+            <label class="create-level">
+              <span class="create-label">학교급</span>
+              <select id="create-level" name="level">
+                <option value="초등">초등학교</option>
+                <option value="중학" selected>중학교</option>
+                <option value="고등">고등학교</option>
+              </select>
+            </label>
+            <button id="create-submit" class="btn btn-primary" type="submit" disabled>AI로 문제 만들기</button>
+          </div>
+          <p id="create-quota" class="create-quota">사용 가능 횟수를 확인하는 중이에요.</p>
+          <p id="create-status" class="create-status" role="status" aria-live="polite"></p>
+          <p class="create-note">이름·전화번호 같은 개인정보가 들어간 글은 넣지 마세요. 지문은 Google Gemini로 보내 분석해요.</p>
+        </form>
+        <h3 class="create-list-title">내가 만든 문제</h3>
+      </section>
+
       <div id="passage-list" class="passage-list"></div>
     </section>
 

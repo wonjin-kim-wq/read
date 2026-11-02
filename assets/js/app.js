@@ -25,6 +25,8 @@ const LEVEL_TITLES = [
   "독해의 초월자",
 ];
 const XP_STORAGE_KEY = "readingXp";
+const CUSTOM_STORAGE_KEY = "readingCustomPassages"; // AI로 만든 지문(이 브라우저에만 저장)
+const MAX_CUSTOM_PASSAGES = 20;
 
 /**
  * 누적 경험치(totalXp)를 받아 현재 레벨/칭호/진행률 정보를 계산한다.
@@ -54,6 +56,23 @@ function loadTotalXp() {
   }
 }
 
+function loadCustomPassages() {
+  try {
+    const list = JSON.parse(window.localStorage.getItem(CUSTOM_STORAGE_KEY) || "[]");
+    return Array.isArray(list) ? list.filter((p) => p && p.id && Array.isArray(p.questions)) : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function saveCustomPassages(list) {
+  try {
+    window.localStorage.setItem(CUSTOM_STORAGE_KEY, JSON.stringify(list));
+  } catch (err) {
+    /* 저장 공간이 없으면 이번 방문 동안만 유지 */
+  }
+}
+
 function saveTotalXp(totalXp) {
   try {
     window.localStorage.setItem(XP_STORAGE_KEY, String(totalXp));
@@ -74,6 +93,9 @@ const state = {
   peeking: false,       // 문제 풀기 중 잠깐 지문을 다시 보고 있는지 여부
   savedRange: null,     // 모바일에서 도구 버튼을 누르는 순간 선택이 풀리는 것에 대비해 기억한 지문 선택 범위
   totalXp: loadTotalXp(),
+  customPassages: loadCustomPassages(),
+  generating: false,
+  createEnabled: false, // 서버 연결·키 설정·남은 횟수를 모두 만족할 때만 true
 };
 
 const el = {
@@ -111,6 +133,16 @@ const el = {
   xpBarFill: document.getElementById("xp-bar-fill"),
   xpProgressText: document.getElementById("xp-progress-text"),
   resultXp: document.getElementById("result-xp"),
+  createPanel: document.getElementById("create-panel"),
+  createForm: document.getElementById("create-form"),
+  createText: document.getElementById("create-text"),
+  createFile: document.getElementById("create-file"),
+  createFileName: document.getElementById("create-file-name"),
+  createLevel: document.getElementById("create-level"),
+  createSubmit: document.getElementById("create-submit"),
+  createStatus: document.getElementById("create-status"),
+  createQuota: document.getElementById("create-quota"),
+  createCount: document.getElementById("create-count"),
 };
 
 init();
@@ -162,11 +194,15 @@ function showScreen(name) {
 
 function renderPassageList() {
   el.passageList.innerHTML = "";
-  const filtered = state.passages.filter(
-    (p) => state.levelFilter === "all" || p.level === state.levelFilter
-  );
+  const isCreate = state.levelFilter === "create";
+  el.createPanel.classList.toggle("hidden", !isCreate);
+  const filtered = isCreate
+    ? state.customPassages
+    : state.passages.filter((p) => state.levelFilter === "all" || p.level === state.levelFilter);
   if (filtered.length === 0) {
-    el.passageList.innerHTML = '<p class="list-message">해당 난이도의 지문이 아직 없어요.</p>';
+    el.passageList.innerHTML = isCreate
+      ? '<p class="list-message">아직 만든 문제가 없어요. 위에 지문을 넣고 문제를 만들어 보세요.</p>'
+      : '<p class="list-message">해당 난이도의 지문이 아직 없어요.</p>';
     return;
   }
   filtered.forEach((p, i) => {
@@ -179,6 +215,7 @@ function renderPassageList() {
     card.innerHTML = `
       <span class="card-index" aria-hidden="true">${pad2(i + 1)}</span>
       <span class="badge-row">
+        ${p.source === "ai" ? '<span class="badge badge-ai">AI</span>' : ""}
         <span class="badge">${escapeHtml(p.category)}</span>
         ${levelBadge}
       </span>
@@ -193,8 +230,110 @@ function renderPassageList() {
 
 /* ---------------- 2) 풀이 화면 ---------------- */
 
+function findPassage(id) {
+  return state.passages.find((p) => p.id === id) || state.customPassages.find((p) => p.id === id);
+}
+
+/* ---------------- AI 문제 만들기 ---------------- */
+
+async function refreshCreateStatus() {
+  try {
+    const res = await fetch("api/generate/status", { cache: "no-store" });
+    if (!res.ok) throw new Error(String(res.status));
+    const info = await res.json();
+    if (!info.enabled) {
+      setCreateAvailability(false, "AI 문제 만들기가 아직 설정되지 않았어요.");
+      return;
+    }
+    if (info.questionCount) el.createCount.textContent = info.questionCount;
+    updateQuota(info);
+  } catch (err) {
+    setCreateAvailability(false, "AI 문제 만들기는 서버가 연결된 사이트에서만 쓸 수 있어요.");
+  }
+}
+
+function setCreateAvailability(enabled, message) {
+  state.createEnabled = enabled;
+  el.createSubmit.disabled = !enabled || state.generating;
+  el.createQuota.textContent = message;
+}
+
+function updateQuota(info) {
+  if (typeof info.remainingToday !== "number") return;
+  const left = info.remainingToday;
+  setCreateAvailability(
+    left > 0,
+    left > 0 ? `오늘 ${left}번 더 만들 수 있어요.` : "오늘 만들 수 있는 횟수를 모두 썼어요. 내일 다시 만들어 주세요."
+  );
+}
+
+function setCreateStatus(message, kind) {
+  el.createStatus.textContent = message;
+  el.createStatus.className = `create-status${kind ? ` ${kind}` : ""}`;
+}
+
+async function submitCreateForm(event) {
+  event.preventDefault();
+  if (state.generating) return;
+  const file = el.createFile.files[0];
+  const text = el.createText.value.trim();
+  if (!file && text.length < 200) {
+    setCreateStatus("지문을 200자 이상 붙여 넣거나 PDF 파일을 올려 주세요.", "error");
+    return;
+  }
+
+  const form = new FormData();
+  form.append("level", el.createLevel.value);
+  if (file) form.append("file", file);
+  else form.append("text", text);
+
+  state.generating = true;
+  el.createSubmit.disabled = true;
+  el.createSubmit.textContent = "만드는 중…";
+  setCreateStatus("AI가 지문을 읽고 문제를 만들고 있어요. 30초~1분 정도 걸려요.", "busy");
+  try {
+    const res = await fetch("api/generate", { method: "POST", body: form });
+    let data = {};
+    try {
+      data = await res.json();
+    } catch (err) {
+      /* 서버가 JSON이 아닌 오류를 돌려준 경우 */
+    }
+    if (!res.ok || !data.passage) {
+      setCreateStatus(data.error || "문제를 만들지 못했어요. 잠시 후 다시 시도해 주세요.", "error");
+      updateQuota(data);
+      return;
+    }
+    addCustomPassage(data.passage);
+    el.createForm.reset();
+    el.createFileName.textContent = "";
+    setCreateStatus(
+      data.cached
+        ? "이미 만든 적 있는 지문이라 저장된 문제를 불러왔어요. (횟수 차감 없음)"
+        : `문제 ${data.passage.questions.length}개를 만들었어요. 아래 목록에서 풀어 보세요.`,
+      "success"
+    );
+    updateQuota(data);
+  } catch (err) {
+    setCreateStatus("서버에 연결하지 못했어요. 인터넷 연결을 확인해 주세요.", "error");
+  } finally {
+    state.generating = false;
+    el.createSubmit.textContent = "AI로 문제 만들기";
+    el.createSubmit.disabled = !state.createEnabled;
+  }
+}
+
+function addCustomPassage(passage) {
+  state.customPassages = [passage, ...state.customPassages.filter((p) => p.id !== passage.id)].slice(
+    0,
+    MAX_CUSTOM_PASSAGES
+  );
+  saveCustomPassages(state.customPassages);
+  renderPassageList();
+}
+
 function startPassage(id) {
-  const passage = state.passages.find((p) => p.id === id);
+  const passage = findPassage(id);
   if (!passage) return;
   state.current = passage;
   state.answers = {};
@@ -381,7 +520,14 @@ function bindGlobalEvents() {
         b.classList.toggle("active", b === btn);
       });
       renderPassageList();
+      if (state.levelFilter === "create") refreshCreateStatus();
     });
+  });
+
+  el.createForm.addEventListener("submit", submitCreateForm);
+  el.createFile.addEventListener("change", () => {
+    const file = el.createFile.files[0];
+    el.createFileName.textContent = file ? `선택한 파일: ${file.name}` : "";
   });
 
   el.btnStartSolve.addEventListener("click", enterSolvingMode);
