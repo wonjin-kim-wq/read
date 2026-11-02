@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
       - name: Validate passages and reference logic
         run: python3 -m unittest discover -s tests -v
       - name: Check JavaScript syntax

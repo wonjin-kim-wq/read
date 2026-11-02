@@ -1,7 +1,8 @@
 # 읽는 힘 — 비문학 독해 연습
 
 비즈코더에서 만든 초등·중학·고등 수준의 비문학 독해 연습 웹 앱입니다.
-별도 패키지 설치나 빌드 없이 정적 HTTP 서버에서 실행합니다.
+Flask 백엔드(`app.py`)가 정적 파일과 지문 데이터를 함께 제공하며, 외부 API를 연동할 때
+API 키 등 민감한 값을 서버에서만 다루도록 구조화되어 있습니다.
 
 ## 주요 기능
 
@@ -19,14 +20,17 @@
 
 ```text
 .
-├── index.html                  # 앱 진입점
+├── app.py                       # Flask 백엔드: 정적 파일 서빙 + /api/passages
+├── requirements.txt             # Python 의존성 (Flask, requests)
+├── index.html                   # 앱 진입점
 ├── assets/
 │   ├── css/styles.css          # 화면 스타일
 │   ├── css/intro.css           # 첫 진입 인트로 스타일
 │   ├── js/intro.js             # 첫 진입 인트로(독립 컴포넌트)
-│   └── js/app.js               # 화면·타이머·채점·XP 동작
-├── data/passages.json          # 지문·문제·정답·해설
+│   └── js/app.js               # 화면·타이머·채점·XP 동작 (지문은 /api/passages 호출)
+├── data/passages.json          # 지문·문제·정답·해설 (서버가 읽어 API로 내려줌)
 ├── tests/test_passages.py      # 데이터 무결성 및 Python으로 재현한 로직 검증
+├── tests/test_server.py        # Flask 백엔드(app.py) 라우트 검증
 └── .github/workflows/check.yml # 푸시·PR 자동 검증
 ```
 
@@ -35,15 +39,25 @@
 Python 3가 설치된 환경에서 저장소 루트에서 실행합니다.
 
 ```sh
-python3 -m http.server 8000 --bind 127.0.0.1
+pip install -r requirements.txt
+python3 app.py
 ```
 
 브라우저에서 <http://localhost:8000>을 엽니다. 종료하려면 `Ctrl+C`를 누릅니다.
-지문은 `fetch()`로 불러오므로 HTML 파일을 직접 열기보다 HTTP 서버를 사용하세요.
+지문은 프런트엔드(`assets/js/app.js`)가 `/api/passages`를 호출해 받아오며, 이 엔드포인트는
+서버(`app.py`)가 `data/passages.json`을 읽어 내려줍니다.
+서버 없이 정적 호스팅된 경우에는 API가 없으므로 `data/passages.json`을 직접 읽어 그대로 동작합니다.
+서버는 `index.html`, `assets/`, `data/` 아래 파일만 내려주며 `app.py`·`.env`·`tests/` 등은 404로 막습니다.
 글꼴(본문 MaruBuri, 손글씨 Nanum Pen Script)은 외부 CDN에서 불러오며, 연결할 수 없으면 시스템 글꼴을 사용합니다.
 
-정적 호스팅 시 `index.html`, `assets/`, `data/`를 같은 루트에 배치합니다.
-상대 경로를 사용하므로 하위 경로에서도 실행할 수 있습니다.
+배포 시 플랫폼이 `PORT` 환경변수를 주입하며, `app.py`는 `0.0.0.0`에 바인딩합니다.
+
+### 외부 API 연동
+
+브라우저가 아니라 `app.py`(서버)에서 외부 API를 호출하도록 구조를 바꿔 두었습니다.
+API 키 등 민감한 값은 환경변수(`EXTERNAL_API_KEY`, `EXTERNAL_API_BASE_URL`)로 주입하고,
+`app.py`에 새 라우트(예: `/api/external/...`)를 추가해 해당 API를 호출한 뒤 결과만
+클라이언트로 내려주는 방식을 권장합니다. 이렇게 하면 키가 브라우저에 노출되지 않습니다.
 
 ## 첫 진입 인트로
 
@@ -62,7 +76,8 @@ node --check assets/js/app.js
 node --check assets/js/intro.js
 ```
 
-첫 명령은 지문 구조·학교급별 분량, Python으로 재현한 채점·레벨 계산, 인트로 파일 연결을 검증합니다.
+첫 명령은 지문 구조·학교급별 분량, Python으로 재현한 채점·레벨 계산, 인트로 파일 연결,
+그리고 Flask 백엔드(`app.py`)의 라우트(`/`, `/api/passages`, 정적 파일)를 검증합니다.
 나머지 명령은 Node.js로 JavaScript 문법을 확인합니다.
 Python 테스트는 실제 브라우저 JavaScript 실행을 대신하지 않습니다.
 화면 변경 후에는 지문 선택, 문제 이동, 채점, XP 저장, 표시 도구(휴대폰 포함), 인트로 재생·건너뛰기도 브라우저에서 확인하세요.

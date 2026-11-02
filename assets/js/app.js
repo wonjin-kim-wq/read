@@ -117,8 +117,7 @@ init();
 
 async function init() {
   try {
-    const res = await fetch("data/passages.json", { cache: "no-store" });
-    state.passages = await res.json();
+    state.passages = await fetchPassages();
   } catch (err) {
     el.passageList.innerHTML =
       '<p class="list-message error">지문 데이터를 불러오지 못했어요. 페이지를 새로고침 해보세요.</p>';
@@ -129,6 +128,22 @@ async function init() {
   renderXpWidget();
   bindGlobalEvents();
   showScreen("select");
+}
+
+/**
+ * 지문은 Flask 서버의 /api/passages에서 받는다.
+ * 서버 없이 정적 호스팅된 경우(API가 없으면) data/passages.json을 직접 읽는다.
+ */
+async function fetchPassages() {
+  try {
+    const res = await fetch("api/passages", { cache: "no-store" });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    /* 서버가 없으면 아래 정적 파일로 넘어간다 */
+  }
+  const res = await fetch("data/passages.json", { cache: "no-store" });
+  if (!res.ok) throw new Error(`passages ${res.status}`);
+  return res.json();
 }
 
 /* ---------------- 화면 전환 ---------------- */
