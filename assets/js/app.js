@@ -266,6 +266,7 @@ function renderPassageList() {
       <span class="sheet-header"><span>읽는 힘 · ${escapeHtml(p.category)}</span><span class="sheet-number">No. ${pad2(i + 1)}</span></span>
       <span class="manuscript-grid" aria-hidden="true"></span>
       <span class="manuscript-title" aria-hidden="true">${Array.from(p.title).map((char) => `<span>${escapeHtml(char)}</span>`).join("")}</span>
+      <span class="sheet-title-overlay" aria-hidden="true"><span>${escapeHtml(p.title)}</span></span>
       <span class="sheet-footer">
         <span class="sheet-meta">${escapeHtml(p.level)}${p.source === "ai" ? " · AI" : ""} · ${timeLabel} · ${p.questions.length}문제</span>
         <span class="card-cta" aria-hidden="true">읽기 시작 ↗</span>

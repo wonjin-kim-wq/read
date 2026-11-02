@@ -1388,3 +1388,17 @@ mark.hl-green.hl-underline { text-decoration: underline; }
 }
 .passage-list.hidden, #sheets-title.hidden, #auth-level-field.hidden { display: none; }
 .book-shelf .book:hover, .book-shelf .book:focus-visible { animation-play-state: paused; }
+
+/* 원고지는 그대로 두고, 선택 중에는 제목을 중앙에서 또렷하게 보여 준다. */
+.passage-card > :not(.sheet-title-overlay) { transition: filter .24s ease, opacity .24s ease; }
+.sheet-title-overlay { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center; padding: 28px; background: #fffefa65; opacity: 0; transition: opacity .24s ease; pointer-events: none; }
+.sheet-title-overlay > span { max-width: 100%; color: var(--color-text); font-family: var(--font-main); font-size: clamp(20px, 2.3vw, 28px); font-weight: 700; line-height: 1.65; text-align: center; word-break: keep-all; overflow-wrap: anywhere; text-shadow: 0 1px 8px #fffefa; }
+.passage-card:hover > :not(.sheet-title-overlay),
+.passage-card:focus-visible > :not(.sheet-title-overlay) { filter: blur(3px); opacity: .55; }
+.passage-card:hover .sheet-title-overlay,
+.passage-card:focus-visible .sheet-title-overlay { opacity: 1; }
+@media (hover: none) {
+  .sheet-title-overlay { opacity: 1; inset: 48px 0 72px; padding: 16px; }
+  .sheet-title-overlay > span { font-size: 18px; }
+  .passage-card .manuscript-grid, .passage-card .manuscript-title { filter: blur(1.5px); opacity: .5; }
+}
