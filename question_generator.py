@@ -66,10 +66,11 @@ RESPONSE_SCHEMA = {
 class GenerationError(Exception):
     """사용자에게 그대로 보여 줄 수 있는 메시지와 HTTP 상태를 담는 오류."""
 
-    def __init__(self, message, status=502):
+    def __init__(self, message, status=502, detail=""):
         super().__init__(message)
         self.message = message
         self.status = status
+        self.detail = detail  # 원인 파악용 짧은 코드(예: "404 NOT_FOUND"). 키 같은 비밀 값은 넣지 않는다.
 
 
 def api_key():
@@ -156,13 +157,18 @@ def call_gemini(level, text=None, pdf_bytes=None):
             response = request(None)
     except errors.APIError as err:
         code = getattr(err, "code", None)
+        detail = f"{code} {getattr(err, 'status', '') or ''} {(getattr(err, 'message', '') or '')[:160]}".strip()
+        log.warning("gemini %s error: %s", model_name(), detail)
         if code == 429:
-            raise GenerationError("오늘 AI 사용 한도를 다 썼어요. 내일 다시 시도해 주세요.", 429)
+            raise GenerationError("오늘 AI 사용 한도를 다 썼어요. 내일 다시 시도해 주세요.", 429, detail)
         if code in (400, 401, 403) and "API key" in str(err):
-            raise GenerationError("AI 설정(API 키)에 문제가 있어요. 관리자에게 문의해 주세요.", 503)
-        raise GenerationError("AI 서버에서 오류가 났어요. 잠시 후 다시 시도해 주세요.", 502)
-    except Exception:
-        raise GenerationError("AI 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.", 502)
+            raise GenerationError("AI 설정(API 키)에 문제가 있어요. 관리자에게 문의해 주세요.", 503, f"{code} API key")
+        if code == 404:
+            raise GenerationError("설정된 AI 모델을 찾지 못했어요. 관리자에게 문의해 주세요.", 503, detail)
+        raise GenerationError("AI 서버에서 오류가 났어요. 잠시 후 다시 시도해 주세요.", 502, detail)
+    except Exception as err:
+        log.exception("gemini call failed")
+        raise GenerationError("AI 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.", 502, type(err).__name__)
 
     log.info(
         "gemini %s answered in %.1fs (thinking budget %s)",

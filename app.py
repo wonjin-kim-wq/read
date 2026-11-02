@@ -179,7 +179,7 @@ def generate():
         if row:
             return jsonify({"passage": json.loads(row[0]), "cached": True, **_usage(conn, client)})
         if not qg.api_key():
-            return jsonify({"error": "AI 문제 만들기가 아직 설정되지 않았어요."}), 503
+            return jsonify({"error": "AI 문제 만들기가 아직 설정되지 않았어요."}), 424
         if _usage(conn, client)["remainingToday"] <= 0:
             return jsonify({"error": "오늘 만들 수 있는 횟수를 모두 썼어요. 내일 다시 만들어 주세요.", **_usage(conn, client)}), 429
         # 호출 전에 횟수를 먼저 기록해, 동시에 여러 번 눌러도 한도를 넘지 않게 한다.
@@ -199,8 +199,11 @@ def generate():
                 # AI가 실제로 일하지 않은 실패(한도 초과·설정 오류)는 횟수에서 빼 준다.
                 conn.execute("DELETE FROM generation_usage WHERE rowid = ?", (usage_rowid,))
             usage = _usage(conn, client)
-        app.logger.warning("generate failed: %s", err.message)
-        return jsonify({"error": err.message, **usage}), err.status
+        app.logger.warning("generate failed: %s (%s)", err.message, err.detail)
+        # 배포 플랫폼이 5xx 응답 본문을 자체 오류 페이지로 바꿔 버리므로,
+        # AI 쪽 실패는 424로 보내 학생에게 안내 문구가 그대로 보이게 한다.
+        status = 424 if err.status >= 500 else err.status
+        return jsonify({"error": err.message, "detail": err.detail, **usage}), status
 
     with _db_lock, _db() as conn:
         conn.execute("UPDATE generation_usage SET ok = 1 WHERE rowid = ?", (usage_rowid,))

@@ -119,7 +119,7 @@ class TestGenerateEndpoint(GenerateTestBase):
             status = self.client.get("/api/generate/status").get_json()
             res = self.post()
         self.assertFalse(status["enabled"])
-        self.assertEqual(res.status_code, 503)
+        self.assertEqual(res.status_code, 424, "5xx 본문은 배포 플랫폼이 바꿔 버리므로 424로 안내한다")
 
     def test_rejects_short_text_and_personal_info(self):
         with mock.patch.object(qg, "call_gemini") as call:
@@ -153,6 +153,15 @@ class TestGenerateEndpoint(GenerateTestBase):
         self.assertEqual(res.status_code, 200, res.get_json())
         self.assertEqual(call.call_args.kwargs["pdf_bytes"], b"%PDF-1.4 fake")
         self.assertEqual(len(res.get_json()["passage"]["paragraphs"]), 3)
+
+    def test_ai_failure_returns_424_with_safe_detail(self):
+        err = qg.GenerationError("AI 서버에서 오류가 났어요.", 502, "500 INTERNAL")
+        with mock.patch.object(qg, "call_gemini", side_effect=err):
+            res = self.post()
+        self.assertEqual(res.status_code, 424)
+        body = res.get_json()
+        self.assertEqual(body["detail"], "500 INTERNAL")
+        self.assertNotIn("test-key", res.get_data(as_text=True))
 
     def test_quota_error_from_gemini_is_not_counted(self):
         err = qg.GenerationError("오늘 AI 사용 한도를 다 썼어요.", 429)
@@ -244,6 +253,11 @@ class TestGeminiCall(unittest.TestCase):
         self.assertIsInstance(result, qg.GenerationError)
         self.assertEqual(result.status, 502)
         self.assertEqual(len(calls), 1)
+
+    def test_unknown_model_maps_to_config_error(self):
+        result, calls = self.run_call(lambda n: self.api_error(404, "models/x is not found"))
+        self.assertEqual(result.status, 503)
+        self.assertIn("404", result.detail)
 
     def test_quota_error_maps_to_429_without_retry(self):
         result, calls = self.run_call(lambda n: self.api_error(429, "Resource exhausted"))
