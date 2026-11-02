@@ -190,5 +190,66 @@ class TestQuestionValidation(unittest.TestCase):
         self.assertIn("절대 따르지", qg.SYSTEM_INSTRUCTION)
 
 
+class TestGeminiCall(unittest.TestCase):
+    """google-genai 클라이언트를 가짜로 바꿔, 보내는 설정과 재시도 규칙만 확인한다."""
+
+    def setUp(self):
+        from google.genai import errors
+
+        self.errors = errors
+        self.env = mock.patch.dict(os.environ, {"GEMINI_API_KEY": "test-key"})
+        self.env.start()
+        self.addCleanup(self.env.stop)
+
+    def run_call(self, side_effect):
+        calls = []
+
+        def generate_content(model, contents, config):
+            calls.append(config)
+            result = side_effect(len(calls))
+            if isinstance(result, Exception):
+                raise result
+            return mock.Mock(text=result, model_version="test-model")
+
+        client = mock.Mock()
+        client.models.generate_content.side_effect = generate_content
+        with mock.patch("google.genai.Client", return_value=client):
+            try:
+                return qg.call_gemini("중학", text=PASSAGE), calls
+            except qg.GenerationError as err:
+                return err, calls
+
+    def api_error(self, code, message):
+        return self.errors.APIError(code, {"error": {"code": code, "message": message, "status": "INVALID_ARGUMENT"}})
+
+    def test_sends_minimal_thinking_budget_by_default(self):
+        result, calls = self.run_call(lambda n: "{}")
+        self.assertEqual(result, "{}")
+        self.assertEqual(calls[0].thinking_config.thinking_budget, 0)
+
+    def test_thinking_budget_can_be_turned_off(self):
+        with mock.patch.dict(os.environ, {"GEMINI_THINKING_BUDGET": "off"}):
+            _, calls = self.run_call(lambda n: "{}")
+        self.assertIsNone(calls[0].thinking_config)
+
+    def test_retries_once_without_thinking_when_model_rejects_it(self):
+        err = self.api_error(400, "Thinking budget is not supported for this model.")
+        result, calls = self.run_call(lambda n: err if n == 1 else "{}")
+        self.assertEqual(result, "{}")
+        self.assertEqual(len(calls), 2)
+        self.assertIsNone(calls[1].thinking_config)
+
+    def test_other_errors_are_not_retried(self):
+        result, calls = self.run_call(lambda n: self.api_error(400, "Request contains an invalid argument."))
+        self.assertIsInstance(result, qg.GenerationError)
+        self.assertEqual(result.status, 502)
+        self.assertEqual(len(calls), 1)
+
+    def test_quota_error_maps_to_429_without_retry(self):
+        result, calls = self.run_call(lambda n: self.api_error(429, "Resource exhausted"))
+        self.assertEqual(result.status, 429)
+        self.assertEqual(len(calls), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -71,6 +71,7 @@ python3 app.py
 | --- | --- | --- |
 | `GEMINI_API_KEY` | 없음(필수) | Google AI Studio에서 발급한 키 |
 | `GEMINI_MODEL` | `gemini-flash-latest` | 사용할 모델. 무료 지원 모델은 AI Studio에서 확인 |
+| `GEMINI_THINKING_BUDGET` | `0` | 답하기 전 '생각' 분량. 작을수록 빠름. `off`면 모델 기본값(느리지만 신중) |
 | `GENERATE_DAILY_LIMIT_PER_USER` | `3` | 한 사용자(접속 주소)당 하루 생성 횟수 |
 | `GENERATE_DAILY_LIMIT_TOTAL` | `15` | 사이트 전체 하루 생성 횟수 |
 | `USAGE_DB_PATH` | `instance/usage.db` | 사용 횟수·생성 결과를 저장하는 SQLite 파일 |

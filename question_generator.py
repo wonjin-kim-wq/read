@@ -7,8 +7,12 @@
 """
 
 import json
+import logging
 import os
 import re
+import time
+
+log = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "gemini-flash-latest"
 QUESTION_COUNT = 5
@@ -76,6 +80,21 @@ def model_name():
     return os.environ.get("GEMINI_MODEL", "").strip() or DEFAULT_MODEL
 
 
+def thinking_budget():
+    """답하기 전 '생각' 분량. 작을수록 빠르다(기본 0 = 최소).
+
+    GEMINI_THINKING_BUDGET에 숫자를 넣어 조절하고, "off"면 모델 기본값을 쓴다.
+    Gemini 3.x는 이 값을 가장 가까운 thinking level로 바꿔 적용한다.
+    """
+    raw = os.environ.get("GEMINI_THINKING_BUDGET", "0").strip().lower()
+    if raw in ("", "off", "default"):
+        return None
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 0
+
+
 def split_paragraphs(text):
     parts = re.split(r"\n\s*\n", text.replace("\r\n", "\n").strip())
     paragraphs = [re.sub(r"\s*\n\s*", " ", p).strip() for p in parts]
@@ -113,18 +132,28 @@ def call_gemini(level, text=None, pdf_bytes=None):
     else:
         parts.append(f"<passage>\n{text}\n</passage>")
 
-    client = genai.Client(api_key=key)
-    try:
-        response = client.models.generate_content(
-            model=model_name(),
-            contents=parts,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_INSTRUCTION,
-                response_mime_type="application/json",
-                response_json_schema=RESPONSE_SCHEMA,
-                temperature=0.4,
-            ),
+    def request(budget):
+        config = types.GenerateContentConfig(
+            system_instruction=SYSTEM_INSTRUCTION,
+            response_mime_type="application/json",
+            response_json_schema=RESPONSE_SCHEMA,
+            temperature=0.4,
+            thinking_config=None if budget is None else types.ThinkingConfig(thinking_budget=budget),
         )
+        return client.models.generate_content(model=model_name(), contents=parts, config=config)
+
+    client = genai.Client(api_key=key)
+    budget = thinking_budget()
+    started = time.monotonic()
+    try:
+        try:
+            response = request(budget)
+        except errors.APIError as err:
+            # 모델이 이 생각 분량 설정을 받지 않으면(400) 설정 없이 한 번만 다시 보낸다.
+            if budget is None or getattr(err, "code", None) != 400 or "thinking" not in str(err).lower():
+                raise
+            log.warning("thinking budget %s rejected by %s; retrying without it", budget, model_name())
+            response = request(None)
     except errors.APIError as err:
         code = getattr(err, "code", None)
         if code == 429:
@@ -135,6 +164,12 @@ def call_gemini(level, text=None, pdf_bytes=None):
     except Exception:
         raise GenerationError("AI 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.", 502)
 
+    log.info(
+        "gemini %s answered in %.1fs (thinking budget %s)",
+        getattr(response, "model_version", None) or model_name(),
+        time.monotonic() - started,
+        budget,
+    )
     if not response.text:
         raise GenerationError("AI가 문제를 만들지 못했어요. 다른 지문으로 시도해 주세요.", 502)
     return response.text

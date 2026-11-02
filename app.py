@@ -14,6 +14,7 @@
 
 import hashlib
 import json
+import logging
 import os
 import re
 import sqlite3
@@ -24,6 +25,8 @@ from pathlib import Path
 from flask import Flask, jsonify, request, send_from_directory
 
 import question_generator as qg
+
+logging.basicConfig(level=logging.INFO)  # AI 응답 시간·모델 기록을 서버 로그에 남긴다
 
 ROOT_DIR = Path(__file__).resolve().parent
 DATA_PATH = ROOT_DIR / "data" / "passages.json"
