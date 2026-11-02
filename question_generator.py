@@ -14,7 +14,7 @@ import time
 
 log = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "gemini-flash-latest"
+DEFAULT_MODEL = "gemini-flash-lite-latest"  # 빠른 응답 우선. 품질이 아쉬우면 GEMINI_MODEL=gemini-flash-latest
 QUESTION_COUNT = 5
 MIN_VALID_QUESTIONS = 3
 TIME_LIMIT_SEC = 90  # 기존 지문과 같은 제한 시간 정책

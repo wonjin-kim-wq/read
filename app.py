@@ -138,7 +138,7 @@ PERSONAL_INFO_PATTERNS = [
 def generate_status():
     with _db_lock, _db() as conn:
         usage = _usage(conn, _client_id())
-    return jsonify({"enabled": bool(qg.api_key()), "questionCount": qg.QUESTION_COUNT, **usage})
+    return jsonify({"enabled": bool(qg.api_key()), "model": qg.model_name(), "questionCount": qg.QUESTION_COUNT, **usage})
 
 
 @app.post("/api/generate")
