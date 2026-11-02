@@ -159,10 +159,13 @@ function selectBook(level) {
     const origin = selected.getBoundingClientRect();
     el.passageList.querySelectorAll(".passage-card").forEach((card, i) => {
       const rect = card.getBoundingClientRect();
+      const dx = origin.x + origin.width / 2 - rect.x - rect.width / 2;
+      const dy = origin.y + origin.height / 2 - rect.y - rect.height / 2;
       card.animate([
-        { opacity: 0, transform: `translate(${origin.x + origin.width / 2 - rect.x - rect.width / 2}px, ${origin.y + origin.height / 2 - rect.y - rect.height / 2}px) scale(.15) rotate(-12deg)` },
-        { opacity: 1, transform: "translate(0,0) scale(1) rotate(0deg)" }
-      ], { duration: 650, delay: i * 65, easing: "cubic-bezier(.2,.7,.2,1)", fill: "backwards" });
+        { opacity: 0, transform: `translate(${dx}px, ${dy}px) perspective(900px) rotateX(65deg) rotateY(-28deg) rotateZ(-18deg) scale(.12)`, offset: 0 },
+        { opacity: .9, transform: `translate(${dx * .45}px, ${dy * .45 - 35}px) perspective(900px) rotateX(-18deg) rotateY(12deg) rotateZ(${i % 2 ? 9 : -9}deg) scale(.7)`, offset: .55 },
+        { opacity: 1, transform: "translate(0,0) perspective(900px) rotateX(0) rotateY(0) rotateZ(0) scale(1)", offset: 1 }
+      ], { duration: 1000, delay: i * 150, easing: "cubic-bezier(.22,.65,.25,1)", fill: "backwards" });
     });
   }
   if (level === "create") refreshCreateStatus();
@@ -259,18 +262,16 @@ function renderPassageList() {
     card.style.setProperty("--sheet-delay", `${i * 65}ms`);
     if (p.level) card.dataset.level = p.level;
     const timeLabel = formatMinSec(p.timeLimitSec);
-    const levelBadge = p.level ? `<span class="badge badge-level">${escapeHtml(p.level)}</span>` : "";
     card.innerHTML = `
-      <span class="card-index" aria-hidden="true">${pad2(i + 1)}</span>
-      <span class="badge-row">
-        ${p.source === "ai" ? '<span class="badge badge-ai">AI</span>' : ""}
-        <span class="badge">${escapeHtml(p.category)}</span>
-        ${levelBadge}
+      <span class="sheet-header"><span>읽는 힘 · ${escapeHtml(p.category)}</span><span class="sheet-number">No. ${pad2(i + 1)}</span></span>
+      <span class="manuscript-grid" aria-hidden="true"></span>
+      <span class="manuscript-title" aria-hidden="true">${Array.from(p.title).map((char) => `<span>${escapeHtml(char)}</span>`).join("")}</span>
+      <span class="sheet-footer">
+        <span class="sheet-meta">${escapeHtml(p.level)}${p.source === "ai" ? " · AI" : ""} · ${timeLabel} · ${p.questions.length}문제</span>
+        <span class="card-cta" aria-hidden="true">읽기 시작 ↗</span>
       </span>
-      <h3>${escapeHtml(p.title)}</h3>
-      <p class="meta">제한 시간 ${timeLabel} · 문제 ${p.questions.length}개</p>
-      <span class="card-cta" aria-hidden="true">읽기 시작 →</span>
     `;
+    card.setAttribute("aria-label", `${p.title}, ${p.level}, 제한 시간 ${timeLabel}, ${p.questions.length}문제. 읽기 시작`);
     card.addEventListener("click", () => startPassage(p.id));
     el.passageList.appendChild(card);
   });

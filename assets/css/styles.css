@@ -1325,36 +1325,66 @@ mark.hl-green.hl-underline { text-decoration: underline; }
 }
 
 
-/* 학교급 책장: CSS 입체 책과 정렬된 종이 카드 */
-.book-shelf { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 4vw, 54px); padding: 32px 24px 42px; perspective: 1100px; max-width: 900px; margin: auto; }
-.book-shelf .book { position: relative; display: block; width: 100%; min-height: 240px; padding: 0; border: 0; border-radius: 4px 12px 12px 4px; background: transparent; transform-style: preserve-3d; transform: rotateY(-14deg) rotateZ(-3deg); transition: transform .4s; box-shadow: 9px 15px 18px #292d2b20; cursor: pointer; color: #fffefb; }
-.book-shelf .book:hover, .book-shelf .book.active { transform: rotateY(-5deg) rotateZ(0deg) translateY(-12px); }
-.book-cover { position: relative; display: flex; flex-direction: column; gap: 15px; align-items: flex-start; justify-content: center; min-height: 260px; padding: 28px 24px 28px 30px; border-radius: 4px 10px 10px 4px; background: #537267; border-left: 10px solid #0002; box-shadow: inset 2px 0 0 #fff3; }
-.book[data-level="중학"] .book-cover { background: #596d88; }
-.book[data-level="고등"] .book-cover { background: #945849; }
-.book-cover strong { font-size: clamp(21px, 3vw, 29px); font-weight: 600; }
+/* 학교급 노트: 앞표지·책등·종이 단면·뒤표지의 깊이를 각각 표현한다. */
+.book-shelf { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(22px, 5vw, 64px); padding: 48px 28px 64px; perspective: 1100px; max-width: 900px; margin: auto; }
+.book-shelf .book { --cover: #537267; position: relative; display: block; width: 100%; min-height: 260px; padding: 0; border: 0; border-radius: 4px 10px 10px 4px; background: transparent; transform-style: preserve-3d; transform: rotateX(12deg) rotateY(-22deg) rotateZ(-5deg); animation: book-hover 6s ease-in-out infinite; cursor: pointer; color: #fffefb; box-shadow: none; }
+.book[data-level="중학"] { --cover: #596d88; animation-delay: -2s; }
+.book[data-level="고등"] { --cover: #945849; animation-delay: -4s; }
+.book-shelf .book::before { content: ""; position: absolute; inset: 3px auto 3px 0; width: 24px; background: var(--cover); filter: brightness(.65); transform-origin: left; transform: translateZ(18px) rotateY(90deg); border-radius: 3px; }
+.book-shelf .book::after { content: ""; position: absolute; inset: 0 -3px -3px 0; border-radius: inherit; background: var(--cover); transform: translateZ(-8px); box-shadow: 18px 35px 26px -12px #292d2b40; }
+.book-cover { position: relative; display: flex; flex-direction: column; gap: 15px; align-items: flex-start; justify-content: center; min-height: 260px; padding: 28px 24px 28px 30px; border-radius: 4px 10px 10px 4px; background: linear-gradient(100deg, #0002, transparent 12%, #fff1 50%, transparent 90%), var(--cover); border-left: 10px solid #0002; box-shadow: inset 2px 0 1px #fff5, inset -1px 0 1px #0003, 2px 3px 4px #0002; transform: translateZ(18px); transform-origin: left center; transition: transform .55s, box-shadow .55s; }
+.book-cover::after { content: ""; position: absolute; inset: 12px; border: 1px solid #fff3; border-radius: 2px 5px 5px 2px; pointer-events: none; }
+.book-shelf .book:hover .book-cover, .book-shelf .book:focus-visible .book-cover { transform: translateZ(18px) rotateY(-14deg); }
+.book-shelf .book.active .book-cover { transform: translateZ(18px) rotateY(-9deg); box-shadow: inset 2px 0 1px #fff5, 0 0 0 2px var(--color-paper), 0 0 0 4px var(--cover); }
+.book-cover strong { font-size: clamp(21px, 3vw, 29px); font-weight: 600; text-shadow: 0 1px 1px #0003; }
 .book-cover > span:not(.book-rule) { font-size: 12px; }
 .book-cover .book-number { letter-spacing: .12em; opacity: .85; }
 .book-cover small { margin-top: 22px; font-size: 12px; }
 .book-rule { display: block; width: 36px; border-top: 1px solid #fff9; }
-.book-pages { position: absolute; inset: 6px -9px 5px 8px; background: repeating-linear-gradient(to bottom, #fffefb 0 3px, #dfdbd1 3px 4px); border-radius: 3px 10px 10px 3px; transform: translateZ(-8px); }
-.book-shelf .book.active .book-cover { outline: 3px solid var(--color-accent); outline-offset: 5px; }
-.book:focus-visible { outline: 3px solid var(--color-text); outline-offset: 9px; }
+.book-pages { position: absolute; inset: 5px -12px 3px 5px; background: repeating-linear-gradient(to bottom, #fffefb 0 2px, #d2cec2 2px 3px); border: 1px solid #d8d1c0; border-radius: 3px 8px 8px 3px; transform: translateZ(4px); box-shadow: inset -5px 0 6px #a99d8033; }
+.book:focus-visible { outline: 3px solid var(--color-text); outline-offset: 12px; }
+@keyframes book-hover {
+  0%, 100% { transform: translateY(0) rotateX(12deg) rotateY(-22deg) rotateZ(-5deg); }
+  50% { transform: translateY(-16px) rotateX(8deg) rotateY(-15deg) rotateZ(-2deg); }
+}
 .library-create { display: block; margin: 0 auto 28px; }
 .trial-status { color: var(--color-muted); font-size: 13px; margin-top: 16px; }
 #sheets-title { margin: 20px 0; font-size: 21px; }
-.passage-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
-.passage-card { min-width: 0; border-radius: 3px; border-top: 3px solid var(--color-accent); box-shadow: 2px 4px 0 #e8e4da; }
+/* 지문마다 한 장의 세로 원고지. 24px 글칸과 6px 행 사이 여백. */
+.passage-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; align-items: start; padding: 10px 0 18px; }
+.passage-card { position: relative; display: flex; flex-direction: column; align-items: stretch; aspect-ratio: 3 / 4.2; min-width: 0; padding: 20px; border: 1px solid #e3ded3; border-radius: 1px; background: #fffefa; box-shadow: 2px 4px 9px #40302112, 1px 1px 0 #e4dfd3; overflow: hidden; }
+.passage-card::before { display: none; }
+.passage-card:hover, .passage-card:focus-visible { transform: translateY(-5px) rotate(-.5deg); box-shadow: 3px 10px 18px #40302120; border-color: #bd8378; }
+.sheet-header { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; font-size: 10px; letter-spacing: .08em; color: #a56c63; margin-bottom: 24px; }
+.sheet-number { flex-shrink: 0; font-family: Georgia, serif; font-size: 13px; border-bottom: 1px solid #b77368; min-width: 46px; }
+.manuscript-grid { position: absolute; inset: 64px 20px 76px; border: 3px double #b7736899; background: url('../manuscript-grid.svg') repeat left top; pointer-events: none; }
+.manuscript-title { position: relative; display: grid; grid-template-columns: repeat(auto-fill, 24px); grid-auto-rows: 30px; margin: 0 3px; padding: 3px 0 0; font-family: var(--font-pen); font-size: 23px; line-height: 24px; font-weight: 400; }
+.manuscript-title > span { display: block; text-align: center; white-space: pre; }
+.sheet-footer { margin-top: auto; padding-top: 16px; display: flex; flex-direction: column; gap: 7px; }
+.sheet-meta { color: var(--color-muted); font-size: 11px; }
+.passage-card .card-cta { margin: 0; font-size: 13px; color: #945849; }
 .auth-field select { width: 100%; padding: 10px; border: 1px solid var(--color-grid); border-radius: 6px; font: inherit; background: var(--color-paper); }
 @media (max-width: 640px) {
-  .book-shelf { gap: 13px; padding: 24px 5px 30px; }
-  .book-shelf .book { min-height: 180px; }
+  .book-shelf { gap: 18px; padding: 38px 10px 50px; }
+  .book-shelf .book { min-height: 190px; }
   .book-cover { min-height: 190px; padding: 17px 8px 17px 10px; border-left-width: 5px; gap: 12px; }
+  .book-cover::after { inset: 6px; }
   .book-cover strong { font-size: 19px; }
   .book-cover > span:not(.book-rule), .book-cover small { font-size: 10px; }
   .book-cover .book-number { font-size: 8px; letter-spacing: 0; }
-  .passage-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .book-pages { right: -8px; }
+  .passage-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .passage-card { aspect-ratio: 3 / 4.5; padding: 12px; min-height: 260px; }
+  .sheet-header { font-size: 8px; letter-spacing: 0; margin-bottom: 24px; }
+  .sheet-number { font-size: 10px; min-width: 32px; }
+  .manuscript-grid { inset: 48px 12px 72px; background-size: 20px 25px; }
+  .manuscript-title { grid-template-columns: repeat(auto-fill, 20px); grid-auto-rows: 25px; font-size: 20px; line-height: 20px; }
+  .sheet-meta { font-size: 10px; }
 }
-@media (max-width: 380px) { .passage-list { grid-template-columns: 1fr; } }
-@media (prefers-reduced-motion: reduce) { .book-shelf .book { transition: none; } }
+@media (max-width: 360px) { .passage-list { grid-template-columns: 1fr; max-width: 260px; margin-inline: auto; } }
+@media (prefers-reduced-motion: reduce) {
+  .book-shelf .book { animation: none; transform: rotateY(-15deg); }
+  .book-cover { transition: none; }
+}
 .passage-list.hidden, #sheets-title.hidden, #auth-level-field.hidden { display: none; }
+.book-shelf .book:hover, .book-shelf .book:focus-visible { animation-play-state: paused; }
