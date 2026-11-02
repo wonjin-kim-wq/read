@@ -160,6 +160,162 @@ button { font-family: inherit; color: inherit; }
   justify-content: flex-end;
 }
 
+/* ---------- 로그인 위젯 ---------- */
+.auth-widget {
+  position: relative;
+}
+
+.auth-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-main);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+  max-width: 160px;
+}
+
+.auth-trigger:hover { border-color: var(--color-border-strong); }
+
+.auth-trigger-icon { font-size: 0.9rem; }
+
+#auth-trigger-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  width: 240px;
+  max-width: calc(100vw - 32px);
+  padding: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+
+.auth-panel.hidden { display: none; }
+
+.auth-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  background: var(--color-sunken);
+  border-radius: 999px;
+  padding: 3px;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 6px 0;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  font-family: var(--font-main);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+
+.auth-tab.active {
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.auth-role-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.auth-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  color: var(--color-text-soft);
+  cursor: pointer;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.auth-label {
+  font-size: 0.74rem;
+  color: var(--color-muted);
+}
+
+.auth-field input {
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-family: var(--font-main);
+  font-size: 0.86rem;
+  color: var(--color-text);
+  background: var(--color-paper);
+}
+
+.auth-field input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.auth-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--color-muted);
+}
+
+.auth-error {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--color-danger);
+}
+
+.auth-error.hidden { display: none; }
+
+.auth-form .btn { width: 100%; justify-content: center; }
+
+.auth-welcome {
+  margin: 0 0 10px;
+  font-size: 0.86rem;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.auth-welcome strong { font-weight: 700; }
+
+#auth-user-role {
+  margin-left: 4px;
+  font-size: 0.74rem;
+  color: var(--color-muted);
+}
+
+#auth-panel-user .btn { width: 100%; justify-content: center; }
+
 /* ---------- 경험치 / 칭호 위젯 ---------- */
 .xp-widget {
   display: inline-flex;
@@ -1167,3 +1323,38 @@ mark.hl-green.hl-underline { text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; }
 }
+
+
+/* 학교급 책장: CSS 입체 책과 정렬된 종이 카드 */
+.book-shelf { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 4vw, 54px); padding: 32px 24px 42px; perspective: 1100px; max-width: 900px; margin: auto; }
+.book-shelf .book { position: relative; display: block; width: 100%; min-height: 240px; padding: 0; border: 0; border-radius: 4px 12px 12px 4px; background: transparent; transform-style: preserve-3d; transform: rotateY(-14deg) rotateZ(-3deg); transition: transform .4s; box-shadow: 9px 15px 18px #292d2b20; cursor: pointer; color: #fffefb; }
+.book-shelf .book:hover, .book-shelf .book.active { transform: rotateY(-5deg) rotateZ(0deg) translateY(-12px); }
+.book-cover { position: relative; display: flex; flex-direction: column; gap: 15px; align-items: flex-start; justify-content: center; min-height: 260px; padding: 28px 24px 28px 30px; border-radius: 4px 10px 10px 4px; background: #537267; border-left: 10px solid #0002; box-shadow: inset 2px 0 0 #fff3; }
+.book[data-level="중학"] .book-cover { background: #596d88; }
+.book[data-level="고등"] .book-cover { background: #945849; }
+.book-cover strong { font-size: clamp(21px, 3vw, 29px); font-weight: 600; }
+.book-cover > span:not(.book-rule) { font-size: 12px; }
+.book-cover .book-number { letter-spacing: .12em; opacity: .85; }
+.book-cover small { margin-top: 22px; font-size: 12px; }
+.book-rule { display: block; width: 36px; border-top: 1px solid #fff9; }
+.book-pages { position: absolute; inset: 6px -9px 5px 8px; background: repeating-linear-gradient(to bottom, #fffefb 0 3px, #dfdbd1 3px 4px); border-radius: 3px 10px 10px 3px; transform: translateZ(-8px); }
+.book-shelf .book.active .book-cover { outline: 3px solid var(--color-accent); outline-offset: 5px; }
+.book:focus-visible { outline: 3px solid var(--color-text); outline-offset: 9px; }
+.library-create { display: block; margin: 0 auto 28px; }
+.trial-status { color: var(--color-muted); font-size: 13px; margin-top: 16px; }
+#sheets-title { margin: 20px 0; font-size: 21px; }
+.passage-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.passage-card { min-width: 0; border-radius: 3px; border-top: 3px solid var(--color-accent); box-shadow: 2px 4px 0 #e8e4da; }
+.auth-field select { width: 100%; padding: 10px; border: 1px solid var(--color-grid); border-radius: 6px; font: inherit; background: var(--color-paper); }
+@media (max-width: 640px) {
+  .book-shelf { gap: 13px; padding: 24px 5px 30px; }
+  .book-shelf .book { min-height: 180px; }
+  .book-cover { min-height: 190px; padding: 17px 8px 17px 10px; border-left-width: 5px; gap: 12px; }
+  .book-cover strong { font-size: 19px; }
+  .book-cover > span:not(.book-rule), .book-cover small { font-size: 10px; }
+  .book-cover .book-number { font-size: 8px; letter-spacing: 0; }
+  .passage-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+}
+@media (max-width: 380px) { .passage-list { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .book-shelf .book { transition: none; } }
+.passage-list.hidden, #sheets-title.hidden, #auth-level-field.hidden { display: none; }

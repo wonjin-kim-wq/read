@@ -24,3 +24,4 @@ jobs:
         run: |
           node --check assets/js/app.js
           node --check assets/js/intro.js
+          node --check assets/js/auth.js

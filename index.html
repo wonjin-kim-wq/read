@@ -24,6 +24,51 @@
         </span>
       </div>
       <div id="topbar-actions" class="topbar-actions">
+        <div id="auth-widget" class="auth-widget">
+          <button id="auth-trigger" class="auth-trigger" type="button" aria-haspopup="true" aria-expanded="false">
+            <span class="auth-trigger-icon" aria-hidden="true">👤</span>
+            <span id="auth-trigger-text">로그인</span>
+          </button>
+
+          <div id="auth-panel" class="auth-panel hidden" role="dialog" aria-label="로그인 / 회원가입">
+            <div id="auth-panel-guest">
+              <div class="auth-tabs" role="tablist" aria-label="로그인 또는 회원가입">
+                <button type="button" class="auth-tab active" data-mode="login">로그인</button>
+                <button type="button" class="auth-tab" data-mode="signup">회원가입</button>
+              </div>
+              <div class="auth-role-row" role="radiogroup" aria-label="학생 또는 교사">
+                <label class="auth-role">
+                  <input type="radio" name="auth-role" value="student" checked>
+                  <span>학생</span>
+                </label>
+                <label class="auth-role">
+                  <input type="radio" name="auth-role" value="teacher">
+                  <span>교사</span>
+                </label>
+              </div>
+              <form id="auth-form" class="auth-form" novalidate>
+                <label id="auth-level-field" class="auth-field hidden"><span class="auth-label">나의 학교급</span><select id="auth-level"><option value="초등">초등학교</option><option value="중학" selected>중학교</option><option value="고등">고등학교</option></select></label>
+                <label class="auth-field">
+                  <span class="auth-label">이름</span>
+                  <input id="auth-name" type="text" name="name" maxlength="20" autocomplete="username" required>
+                </label>
+                <label class="auth-field">
+                  <span class="auth-label">비밀번호</span>
+                  <input id="auth-password" type="password" name="password" minlength="6" autocomplete="current-password" required>
+                </label>
+                <p id="auth-hint" class="auth-hint">비밀번호는 6자 이상으로 만들어 주세요.</p>
+                <p id="auth-error" class="auth-error hidden" role="alert"></p>
+                <button id="auth-submit" class="btn btn-primary btn-small" type="submit">로그인</button>
+              </form>
+            </div>
+
+            <div id="auth-panel-user" class="hidden">
+              <p class="auth-welcome"><strong id="auth-user-name"></strong><span id="auth-user-role"></span></p>
+              <button id="auth-logout" class="btn btn-ghost btn-small" type="button">로그아웃</button>
+            </div>
+          </div>
+        </div>
+
         <div id="xp-widget" class="xp-widget">
           <span id="xp-level-badge" class="xp-level-badge">Lv.1</span>
           <div class="xp-widget-body">
@@ -42,42 +87,21 @@
     </div>
   </header>
 
-  <nav class="steps-nav" aria-label="진행 단계">
-    <span class="step" data-step="select"><b>01</b>지문 선택</span>
-    <span class="step" data-step="solve"><b>02</b>문제 풀이</span>
-    <span class="step" data-step="result"><b>03</b>채점 결과</span>
-  </nav>
-
   <main id="app">
     <!-- 1) 지문 선택 화면 -->
     <section id="screen-select" class="screen">
       <div class="screen-head">
-        <h2>지문을 선택하세요</h2>
-        <p class="level-widget-label">학교급을 골라 보세요</p>
+        <h2 id="library-title">오늘은 어떤 책을 펼쳐 볼까요?</h2>
+        <p class="level-widget-label">학교급에 맞는 책을 고르면 읽을거리가 펼쳐져요.</p>
+        <p id="trial-status" class="trial-status" role="status">비회원은 2회 무료로 체험할 수 있어요.</p>
       </div>
-      <div id="level-filter" class="level-filter" role="tablist" aria-label="학교급 선택">
-        <button type="button" class="level-btn active" data-level="all">
-          <span class="level-btn-icon" aria-hidden="true">📚</span>
-          <span class="level-btn-text">전체</span>
-        </button>
-        <button type="button" class="level-btn" data-level="초등">
-          <span class="level-btn-icon" aria-hidden="true">🧒</span>
-          <span class="level-btn-text">초등학교</span>
-        </button>
-        <button type="button" class="level-btn" data-level="중학">
-          <span class="level-btn-icon" aria-hidden="true">📘</span>
-          <span class="level-btn-text">중학교</span>
-        </button>
-        <button type="button" class="level-btn" data-level="고등">
-          <span class="level-btn-icon" aria-hidden="true">🎓</span>
-          <span class="level-btn-text">고등학교</span>
-        </button>
-        <button type="button" class="level-btn level-btn-create" data-level="create">
-          <span class="level-btn-icon" aria-hidden="true">✏️</span>
-          <span class="level-btn-text">문제 만들기</span>
-        </button>
+      <div id="level-filter" class="book-shelf" aria-label="학교급 선택">
+        <button type="button" class="level-btn book" data-level="초등" aria-pressed="false" aria-controls="passage-list"><span class="book-pages" aria-hidden="true"></span><span class="book-cover"><span class="book-number">01 / READING</span><strong>초등학교</strong><span class="book-rule" aria-hidden="true"></span><span>읽기의 첫걸음</span><small>책 펼치기 ↗</small></span></button>
+        <button type="button" class="level-btn book" data-level="중학" aria-pressed="false" aria-controls="passage-list"><span class="book-pages" aria-hidden="true"></span><span class="book-cover"><span class="book-number">02 / READING</span><strong>중학교</strong><span class="book-rule" aria-hidden="true"></span><span>생각을 넓히는 시간</span><small>책 펼치기 ↗</small></span></button>
+        <button type="button" class="level-btn book" data-level="고등" aria-pressed="false" aria-controls="passage-list"><span class="book-pages" aria-hidden="true"></span><span class="book-cover"><span class="book-number">03 / READING</span><strong>고등학교</strong><span class="book-rule" aria-hidden="true"></span><span>깊이 읽는 즐거움</span><small>책 펼치기 ↗</small></span></button>
       </div>
-
+      <button type="button" id="open-create" class="btn btn-ghost library-create">✎ AI로 나만의 문제 만들기</button>
+      <h3 id="sheets-title" class="hidden" tabindex="-1"></h3>
       <!-- AI 문제 만들기: 지문(텍스트/PDF)을 넣으면 서버가 Gemini로 문제를 만든다 -->
       <section id="create-panel" class="create-panel hidden" aria-labelledby="create-title">
         <div class="create-head">
@@ -115,7 +139,7 @@
         <h3 class="create-list-title">내가 만든 문제</h3>
       </section>
 
-      <div id="passage-list" class="passage-list"></div>
+      <div id="passage-list" class="passage-list hidden" aria-labelledby="sheets-title"></div>
     </section>
 
 
@@ -196,6 +220,7 @@
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
+  <script src="assets/js/auth.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>

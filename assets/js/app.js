@@ -88,7 +88,7 @@ const state = {
   timerId: null,
   remainingSec: 0,
   qIndex: 0,            // 현재 보고 있는 문제 번호(한 번에 하나씩만 풀이)
-  levelFilter: "all",   // 지문 선택 화면의 난이도 필터
+  levelFilter: null,   // 지문 선택 화면의 난이도 필터
   solving: false,       // 문제 풀기 모드 여부 (true면 지문이 가려짐)
   peeking: false,       // 문제 풀기 중 잠깐 지문을 다시 보고 있는지 여부
   savedRange: null,     // 모바일에서 도구 버튼을 누르는 순간 선택이 풀리는 것에 대비해 기억한 지문 선택 범위
@@ -145,6 +145,46 @@ const el = {
   createCount: document.getElementById("create-count"),
 };
 
+function selectBook(level) {
+  state.levelFilter = level;
+  el.levelFilter.querySelectorAll(".book").forEach((book) => {
+    const active = book.dataset.level === level;
+    book.classList.toggle("active", active);
+    book.setAttribute("aria-pressed", String(active));
+  });
+  const selected = el.levelFilter.querySelector(".book.active");
+  // 각 종이는 선택한 책의 실제 위치에서 목록의 제자리로 펼쳐진다.
+  renderPassageList();
+  if (selected && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const origin = selected.getBoundingClientRect();
+    el.passageList.querySelectorAll(".passage-card").forEach((card, i) => {
+      const rect = card.getBoundingClientRect();
+      card.animate([
+        { opacity: 0, transform: `translate(${origin.x + origin.width / 2 - rect.x - rect.width / 2}px, ${origin.y + origin.height / 2 - rect.y - rect.height / 2}px) scale(.15) rotate(-12deg)` },
+        { opacity: 1, transform: "translate(0,0) scale(1) rotate(0deg)" }
+      ], { duration: 650, delay: i * 65, easing: "cubic-bezier(.2,.7,.2,1)", fill: "backwards" });
+    });
+  }
+  if (level === "create") refreshCreateStatus();
+}
+function renderTrial(access) {
+  document.getElementById("trial-status").textContent = access.member
+    ? "나의 책이 준비됐어요. 오늘도 한 편 읽어 볼까요?"
+    : `무료 체험 ${access.remaining} / 2회 남음 · 로그인하면 계속 읽을 수 있어요.`;
+}
+async function refreshTrial() {
+  try {
+    const res = await fetch("/api/practice");
+    if (res.ok) renderTrial(await res.json());
+  } catch (_) { /* 시작할 때 서버 연결을 다시 확인한다. */ }
+}
+window.addEventListener("reading-auth", (event) => {
+  stopTimer();
+  selectBook(event.detail ? event.detail.level : null);
+  showScreen("select");
+  refreshTrial();
+});
+
 init();
 
 async function init() {
@@ -156,7 +196,9 @@ async function init() {
     console.error(err);
     return;
   }
-  renderPassageList();
+  if (window.readingUser) state.levelFilter = window.readingUser.level;
+  selectBook(state.levelFilter);
+  refreshTrial();
   renderXpWidget();
   bindGlobalEvents();
   showScreen("select");
@@ -195,6 +237,11 @@ function showScreen(name) {
 function renderPassageList() {
   el.passageList.innerHTML = "";
   const isCreate = state.levelFilter === "create";
+  el.passageList.classList.toggle("hidden", !state.levelFilter);
+  const title = document.getElementById("sheets-title");
+  title.classList.toggle("hidden", !state.levelFilter);
+  title.textContent = isCreate ? "내가 만든 읽을거리" : `${state.levelFilter === "초등" ? "초등학교" : state.levelFilter === "중학" ? "중학교" : "고등학교"} 읽을거리`;
+  if (!state.levelFilter) { el.createPanel.classList.add("hidden"); return; }
   el.createPanel.classList.toggle("hidden", !isCreate);
   const filtered = isCreate
     ? state.customPassages
@@ -209,6 +256,7 @@ function renderPassageList() {
     const card = document.createElement("button");
     card.type = "button";
     card.className = "passage-card";
+    card.style.setProperty("--sheet-delay", `${i * 65}ms`);
     if (p.level) card.dataset.level = p.level;
     const timeLabel = formatMinSec(p.timeLimitSec);
     const levelBadge = p.level ? `<span class="badge badge-level">${escapeHtml(p.level)}</span>` : "";
@@ -332,9 +380,24 @@ function addCustomPassage(passage) {
   renderPassageList();
 }
 
-function startPassage(id) {
+async function startPassage(id) {
   const passage = findPassage(id);
-  if (!passage) return;
+  if (!passage || state.starting) return;
+  state.starting = true;
+  try {
+    const res = await fetch("/api/practice", { method: "POST" });
+    if (![200, 403].includes(res.status)) throw new Error("practice");
+    const access = await res.json();
+    renderTrial(access);
+    if (!access.allowed) {
+      showToast("무료 체험 2회를 모두 사용했어요. 로그인하고 계속 읽어 보세요.");
+      document.getElementById("auth-trigger").click();
+      return;
+    }
+  } catch (err) {
+    showToast("서버 연결을 확인한 뒤 다시 시작해 주세요.");
+    return;
+  } finally { state.starting = false; }
   state.current = passage;
   state.answers = {};
   state.qIndex = 0;
@@ -515,15 +578,12 @@ function bindGlobalEvents() {
 
   el.levelFilter.querySelectorAll(".level-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      state.levelFilter = btn.dataset.level;
-      el.levelFilter.querySelectorAll(".level-btn").forEach((b) => {
-        b.classList.toggle("active", b === btn);
-      });
-      renderPassageList();
-      if (state.levelFilter === "create") refreshCreateStatus();
+      selectBook(btn.dataset.level);
+      document.getElementById("sheets-title").focus({ preventScroll: true });
     });
   });
 
+  document.getElementById("open-create").addEventListener("click", () => selectBook("create"));
   el.createForm.addEventListener("submit", submitCreateForm);
   el.createFile.addEventListener("change", () => {
     const file = el.createFile.files[0];
