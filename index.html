@@ -47,7 +47,7 @@
                 </label>
               </div>
               <form id="auth-form" class="auth-form" novalidate>
-                <label id="auth-level-field" class="auth-field hidden"><span class="auth-label">나의 학교급</span><select id="auth-level"><option value="초등">초등학교</option><option value="중학" selected>중학교</option><option value="고등">고등학교</option></select></label>
+                <label id="auth-level-field" class="auth-field"><span class="auth-label">나의 학교급</span><select id="auth-level"><option value="">저장된 학교급 사용</option><option value="초등">초등학교</option><option value="중학" selected>중학교</option><option value="고등">고등학교</option></select></label>
                 <label class="auth-field">
                   <span class="auth-label">이름</span>
                   <input id="auth-name" type="text" name="name" maxlength="20" autocomplete="username" required>
@@ -95,12 +95,14 @@
         <p class="level-widget-label">학교급에 맞는 책을 고르면 읽을거리가 펼쳐져요.</p>
         <p id="trial-status" class="trial-status" role="status">비회원은 2회 무료로 체험할 수 있어요.</p>
       </div>
-      <div id="level-filter" class="book-shelf" aria-label="학교급 선택">
+      <div id="level-filter" class="book-shelf" aria-label="학교급과 문제 만들기 선택">
         <button type="button" class="level-btn book" data-level="초등" aria-pressed="false" aria-controls="passage-list"><span class="book-pages" aria-hidden="true"></span><span class="book-cover"><span class="book-number">01 / READING</span><strong>초등학교</strong><span class="book-rule" aria-hidden="true"></span><span>읽기의 첫걸음</span><small>책 펼치기 ↗</small></span></button>
         <button type="button" class="level-btn book" data-level="중학" aria-pressed="false" aria-controls="passage-list"><span class="book-pages" aria-hidden="true"></span><span class="book-cover"><span class="book-number">02 / READING</span><strong>중학교</strong><span class="book-rule" aria-hidden="true"></span><span>생각을 넓히는 시간</span><small>책 펼치기 ↗</small></span></button>
         <button type="button" class="level-btn book" data-level="고등" aria-pressed="false" aria-controls="passage-list"><span class="book-pages" aria-hidden="true"></span><span class="book-cover"><span class="book-number">03 / READING</span><strong>고등학교</strong><span class="book-rule" aria-hidden="true"></span><span>깊이 읽는 즐거움</span><small>책 펼치기 ↗</small></span></button>
+        <button type="button" id="open-create" class="level-btn tablet" data-level="create" aria-pressed="false" aria-controls="create-panel passage-list">
+          <span class="tablet-frame"><span class="tablet-camera" aria-hidden="true"></span><span class="tablet-screen"><span class="tablet-label">AI STUDIO</span><span class="tablet-icon" aria-hidden="true">✎</span><strong>나만의<br>문제 만들기</strong><span class="tablet-caption">지문에서 시작하는 새 문제</span><small>태블릿 열기 ↗</small></span></span><span class="tablet-pencil" aria-hidden="true"></span>
+        </button>
       </div>
-      <button type="button" id="open-create" class="btn btn-ghost library-create">✎ AI로 나만의 문제 만들기</button>
       <h3 id="sheets-title" class="hidden" tabindex="-1"></h3>
       <!-- AI 문제 만들기: 지문(텍스트/PDF)을 넣으면 서버가 Gemini로 문제를 만든다 -->
       <section id="create-panel" class="create-panel hidden" aria-labelledby="create-title">

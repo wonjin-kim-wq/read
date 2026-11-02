@@ -34,7 +34,8 @@
 
   function setMode(nextMode) {
     mode = nextMode;
-    document.getElementById("auth-level-field").classList.toggle("hidden", mode !== "signup");
+    document.getElementById("auth-level").value = mode === "signup" ? "중학" : "";
+    document.querySelector("#auth-level option[value='']").disabled = mode === "signup";
     tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.mode === mode));
     submitBtn.textContent = mode === "signup" ? "회원가입" : "로그인";
     passwordInput.autocomplete = mode === "signup" ? "new-password" : "current-password";
@@ -70,7 +71,7 @@
       panelGuest.classList.remove("hidden");
       panelUser.classList.add("hidden");
       form.reset();
-      showError("");
+      setMode("login");
     }
   }
 

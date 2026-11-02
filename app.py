@@ -209,6 +209,9 @@ def auth_login():
     name = (body.get("name") or "").strip()
     password = body.get("password") or ""
 
+    level = body.get("level")
+    if level and level not in qg.LEVELS:
+        return jsonify({"error": "학교급을 다시 선택해 주세요."}), 400
     if role not in ROLES or not name or not password:
         return jsonify({"error": "이름과 비밀번호를 입력해 주세요."}), 400
 
@@ -219,6 +222,10 @@ def auth_login():
     if not row or not check_password_hash(row[3], password):
         return jsonify({"error": "이름 또는 비밀번호가 맞지 않아요."}), 401
 
+    if level:
+        with _accounts_db_lock, _accounts_db() as conn:
+            conn.execute("UPDATE users SET level = ? WHERE id = ?", (level, row[0]))
+        row = (*row[:4], level)
     session.clear()
     session["user_id"] = row[0]
     session.permanent = True

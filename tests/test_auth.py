@@ -88,6 +88,22 @@ class TestLibraryAccess(TestAuth):
         self.assertEqual(self.client.post('/api/auth/login', json=data).get_json()['user']['level'], '고등')
         self.assertEqual(self.client.get('/api/auth/me').get_json()['user']['level'], '고등')
 
+    def test_login_can_update_school_level(self):
+        data = {"role": "student", "name": "학교급변경", "password": "abcdef", "level": "초등"}
+        self.client.post('/api/auth/signup', json=data)
+        self.client.post('/api/auth/logout')
+        data['level'] = '고등'
+        res = self.client.post('/api/auth/login', json=data)
+        self.assertEqual(res.get_json()['user']['level'], '고등')
+        self.assertEqual(self.client.get('/api/auth/me').get_json()['user']['level'], '고등')
+        self.client.post('/api/auth/logout')
+        data.pop('level')
+        self.assertEqual(self.client.post('/api/auth/login', json=data).get_json()['user']['level'], '고등')
+
+    def test_invalid_login_level_rejected(self):
+        res = self.client.post('/api/auth/login', json={"role": "student", "name": "test", "password": "abcdef", "level": "invalid"})
+        self.assertEqual(res.status_code, 400)
+
     def test_invalid_level_rejected(self):
         res = self.client.post('/api/auth/signup', json={"role": "student", "name": "test", "password": "abcdef", "level": "invalid"})
         self.assertEqual(res.status_code, 400)

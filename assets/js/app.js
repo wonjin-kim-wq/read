@@ -147,12 +147,12 @@ const el = {
 
 function selectBook(level) {
   state.levelFilter = level;
-  el.levelFilter.querySelectorAll(".book").forEach((book) => {
+  el.levelFilter.querySelectorAll(".book, .tablet").forEach((book) => {
     const active = book.dataset.level === level;
     book.classList.toggle("active", active);
     book.setAttribute("aria-pressed", String(active));
   });
-  const selected = el.levelFilter.querySelector(".book.active");
+  const selected = el.levelFilter.querySelector(".book.active, .tablet.active");
   // 각 종이는 선택한 책의 실제 위치에서 목록의 제자리로 펼쳐진다.
   renderPassageList();
   if (selected && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -585,7 +585,6 @@ function bindGlobalEvents() {
     });
   });
 
-  document.getElementById("open-create").addEventListener("click", () => selectBook("create"));
   el.createForm.addEventListener("submit", submitCreateForm);
   el.createFile.addEventListener("change", () => {
     const file = el.createFile.files[0];
