@@ -150,8 +150,9 @@ def call_gemini(level, text=None, pdf_bytes=None):
         try:
             response = request(budget)
         except errors.APIError as err:
-            # 모델이 이 생각 분량 설정을 받지 않으면(400) 설정 없이 한 번만 다시 보낸다.
-            if budget is None or getattr(err, "code", None) != 400 or "thinking" not in str(err).lower():
+            # 모델이 생각 분량 설정을 받지 않으면 400을 준다. Flash-Lite처럼 이유를 밝히지 않는
+            # 모델도 있으므로, 400이면 설정 없이 한 번만 다시 보낸다(이후에는 재시도하지 않음).
+            if budget is None or getattr(err, "code", None) != 400:
                 raise
             log.warning("thinking budget %s rejected by %s; retrying without it", budget, model_name())
             response = request(None)

@@ -248,8 +248,21 @@ class TestGeminiCall(unittest.TestCase):
         self.assertEqual(len(calls), 2)
         self.assertIsNone(calls[1].thinking_config)
 
+    def test_generic_400_also_retries_once_without_thinking(self):
+        # Flash-Lite는 생각 분량 0을 이유 없이 "invalid argument"로 거절한다.
+        err = self.api_error(400, "Request contains an invalid argument.")
+        result, calls = self.run_call(lambda n: err if n == 1 else "{}")
+        self.assertEqual(result, "{}")
+        self.assertIsNone(calls[1].thinking_config)
+
+    def test_second_400_is_not_retried_again(self):
+        err = self.api_error(400, "Request contains an invalid argument.")
+        result, calls = self.run_call(lambda n: err)
+        self.assertEqual(result.status, 502)
+        self.assertEqual(len(calls), 2)
+
     def test_other_errors_are_not_retried(self):
-        result, calls = self.run_call(lambda n: self.api_error(400, "Request contains an invalid argument."))
+        result, calls = self.run_call(lambda n: self.api_error(500, "Internal error."))
         self.assertIsInstance(result, qg.GenerationError)
         self.assertEqual(result.status, 502)
         self.assertEqual(len(calls), 1)
