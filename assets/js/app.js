@@ -290,7 +290,7 @@ async function submitCreateForm(event) {
   state.generating = true;
   el.createSubmit.disabled = true;
   el.createSubmit.textContent = "만드는 중…";
-  setCreateStatus("AI가 지문을 읽고 문제를 만들고 있어요. 30초~1분 정도 걸려요.", "busy");
+  setCreateStatus("AI가 지문을 읽고 문제를 만들고 있어요. 1~2분 정도 걸리니 이 화면을 닫지 말고 기다려 주세요.", "busy");
   try {
     const res = await fetch("api/generate", { method: "POST", body: form });
     let data = {};
