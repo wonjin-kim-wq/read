@@ -16,6 +16,8 @@ log = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "gemini-flash-lite-latest"  # 빠른 응답 우선. 품질이 아쉬우면 GEMINI_MODEL=gemini-flash-latest
 QUESTION_COUNT = 5
+# 검증에서 빠지는 문제를 대비해 한 번의 요청에서 1개를 더 받아 두고, 통과한 5개만 쓴다.
+REQUEST_COUNT = QUESTION_COUNT + 1
 MIN_VALID_QUESTIONS = 3
 TIME_LIMIT_SEC = 90  # 기존 지문과 같은 제한 시간 정책
 
@@ -27,7 +29,7 @@ SYSTEM_INSTRUCTION = """너는 한국 학생을 위한 비문학 독해 평가 �
 1. 모든 문제는 지문만 근거로 출제하고, 지문에 없는 사실을 만들지 않는다.
 2. 대상 학년에 맞는 어휘와 문장 길이를 쓴다.
 3. 모든 문제는 4지선다이고 정답은 정확히 하나다. answer는 1~4의 정답 번호다.
-4. 오답은 지문과 관련 있지만 지문을 근거로 분명히 틀린 보기로 쓴다. 보기끼리 겹치지 않게 한다.
+4. 오답은 지문과 관련 있지만 지문을 근거로 분명히 틀린 보기로 쓴다. 보기끼리 겹치지 않게 한다. 보기 앞에 번호(1., ①)를 붙이지 않는다.
 5. 사실적 이해, 추론적 이해, 어휘·문맥, 중심 내용 및 주제 유형을 고루 섞고, 비슷한 문제를 반복하지 않는다.
 6. explanation에는 왜 정답인지와 오답이 틀린 이유를 학생 눈높이로 구체적으로 쓴다.
 7. evidence에는 정답의 근거가 되는 지문 속 문장을 한 글자도 바꾸지 말고 그대로 옮긴다.
@@ -111,7 +113,7 @@ def build_prompt(level, from_pdf):
     )
     return (
         f"대상: {target}\n"
-        f"{source} 그 지문으로 독해 문제 정확히 {QUESTION_COUNT}개를 만들어 JSON으로만 답하라."
+        f"{source} 그 지문으로 독해 문제 정확히 {REQUEST_COUNT}개를 만들어 JSON으로만 답하라."
     )
 
 
@@ -182,6 +184,14 @@ def call_gemini(level, text=None, pdf_bytes=None):
     return response.text
 
 
+_OPTION_NUMBER = re.compile(r"^\s*(?:[①②③④]\s*|\(?[1-4]\)\s*|[1-4]\.\s+)")
+
+
+def _strip_option_number(option):
+    """AI가 붙인 보기 번호("1. ", "①", "(1)")를 떼어 낸다. 화면이 순서를 따로 보여 준다."""
+    return _OPTION_NUMBER.sub("", str(option)).strip()
+
+
 def _squash(s):
     return re.sub(r"[\s\"'“”‘’.,!?·…]", "", s or "")
 
@@ -195,7 +205,8 @@ def validate_questions(raw_questions, passage_text):
         if not isinstance(q, dict):
             continue
         question = str(q.get("question", "")).strip()
-        options = [str(o).strip() for o in q.get("options", []) if str(o).strip()]
+        options = [_strip_option_number(o) for o in q.get("options", [])]
+        options = [o for o in options if o]
         answer = q.get("answer")
         explanation = str(q.get("explanation", "")).strip()
         evidence = str(q.get("evidence", "")).strip()

@@ -187,6 +187,19 @@ class TestQuestionValidation(unittest.TestCase):
         ]
         self.assertEqual(len(qg.validate_questions(bad + [good], PASSAGE)), 1)
 
+    def test_strips_numbers_the_ai_put_on_options(self):
+        good = json.loads(fake_response(count=1))["questions"][0]
+        q = {**good, "options": ["1. 걷기와 줄넘기", "② 우유와 두부", "(3) 멸치", "4.5배 늘어난다"]}
+        options = qg.validate_questions([q], PASSAGE)[0]["options"]
+        self.assertEqual(options, ["걷기와 줄넘기", "우유와 두부", "멸치", "4.5배 늘어난다"])
+
+    def test_keeps_five_when_ai_returns_six(self):
+        questions = json.loads(fake_response(count=6))["questions"]
+        self.assertEqual(len(qg.validate_questions(questions, PASSAGE)), 5)
+
+    def test_prompt_requests_one_spare_question(self):
+        self.assertIn(f"정확히 {qg.QUESTION_COUNT + 1}개", qg.build_prompt("중학", from_pdf=False))
+
     def test_too_few_valid_questions_is_an_error(self):
         with self.assertRaises(qg.GenerationError):
             qg.build_passage(fake_response(count=2), "중학", "ai-x", text=PASSAGE)
