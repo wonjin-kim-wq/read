@@ -59,25 +59,26 @@
 
   function renderUser(user) {
     window.readingUser = user;
-    window.dispatchEvent(new CustomEvent("reading-auth", { detail: user }));
     if (user) {
       triggerText.textContent = `${user.name}님`;
-      panelGuest.classList.add("hidden");
-      panelUser.classList.remove("hidden");
+      panelGuest.hidden = true;
+      panelUser.hidden = false;
       userNameEl.textContent = user.name;
       userRoleEl.textContent = `(${ROLE_LABEL[user.role] || user.role})`;
     } else {
       triggerText.textContent = "로그인";
-      panelGuest.classList.remove("hidden");
-      panelUser.classList.add("hidden");
+      panelGuest.hidden = false;
+      panelUser.hidden = true;
       form.reset();
       setMode("login");
     }
+    window.dispatchEvent(new CustomEvent("reading-auth", { detail: user }));
   }
 
   async function fetchMe() {
     try {
       const res = await fetch("/api/auth/me");
+      if (!res.ok) throw new Error("auth status");
       const data = await res.json();
       renderUser(data.user || null);
     } catch (err) {

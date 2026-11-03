@@ -24,7 +24,7 @@ const LEVEL_TITLES = [
   "진리의 개척자",
   "독해의 초월자",
 ];
-const XP_STORAGE_KEY = "readingXp";
+const XP_STORAGE_KEY = "readingXp:user:";
 const CUSTOM_STORAGE_KEY = "readingCustomPassages"; // AI로 만든 지문(이 브라우저에만 저장)
 const MAX_CUSTOM_PASSAGES = 20;
 
@@ -47,8 +47,9 @@ function computeLevelInfo(totalXp) {
 }
 
 function loadTotalXp() {
+  if (!window.readingUser) return 0;
   try {
-    const raw = window.localStorage.getItem(XP_STORAGE_KEY);
+    const raw = window.localStorage.getItem(XP_STORAGE_KEY + window.readingUser.id);
     const n = Number(raw);
     return Number.isFinite(n) && n >= 0 ? n : 0;
   } catch (err) {
@@ -74,8 +75,9 @@ function saveCustomPassages(list) {
 }
 
 function saveTotalXp(totalXp) {
+  if (!window.readingUser) return;
   try {
-    window.localStorage.setItem(XP_STORAGE_KEY, String(totalXp));
+    window.localStorage.setItem(XP_STORAGE_KEY + window.readingUser.id, String(totalXp));
   } catch (err) {
     /* localStorage를 사용할 수 없는 환경이면 조용히 무시 */
   }
@@ -145,6 +147,13 @@ const el = {
   createCount: document.getElementById("create-count"),
 };
 
+function updateBookVisibility(user) {
+  el.levelFilter.classList.toggle("member-shelf", Boolean(user));
+  el.levelFilter.querySelectorAll(".book").forEach((book) => {
+    book.hidden = Boolean(user) && book.dataset.level !== user.level;
+  });
+}
+
 function selectBook(level) {
   state.levelFilter = level;
   el.levelFilter.querySelectorAll(".book, .tablet").forEach((book) => {
@@ -182,6 +191,11 @@ async function refreshTrial() {
   } catch (_) { /* 시작할 때 서버 연결을 다시 확인한다. */ }
 }
 window.addEventListener("reading-auth", (event) => {
+  updateBookVisibility(event.detail);
+  state.totalXp = loadTotalXp();
+  renderXpWidget();
+  el.resultXp.hidden = true;
+  el.resultXp.replaceChildren();
   stopTimer();
   selectBook(event.detail ? event.detail.level : null);
   showScreen("select");
@@ -199,6 +213,7 @@ async function init() {
     console.error(err);
     return;
   }
+  updateBookVisibility(window.readingUser);
   if (window.readingUser) state.levelFilter = window.readingUser.level;
   selectBook(state.levelFilter);
   refreshTrial();
@@ -581,7 +596,12 @@ function bindGlobalEvents() {
   el.levelFilter.querySelectorAll(".level-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       selectBook(btn.dataset.level);
-      document.getElementById("sheets-title").focus({ preventScroll: true });
+      const heading = document.getElementById("sheets-title");
+      heading.focus({ preventScroll: true });
+      if (btn.classList.contains("book")) {
+        const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        heading.scrollIntoView({ behavior: reduceMotion ? "instant" : "smooth", block: "start" });
+      }
     });
   });
 
@@ -755,6 +775,7 @@ function submitAnswers(isTimeout) {
  * 결과 화면에 표시할 수 있는 정보를 돌려준다. 동시에 헤더의 경험치 위젯도 갱신한다.
  */
 function awardXp(correctCount) {
+  if (!window.readingUser) return null;
   const xpGained = correctCount * XP_PER_CORRECT;
   const before = computeLevelInfo(state.totalXp);
   state.totalXp += xpGained;
@@ -765,6 +786,8 @@ function awardXp(correctCount) {
 }
 
 function renderXpWidget() {
+  document.getElementById("xp-widget").hidden = !window.readingUser;
+  if (!window.readingUser) return;
   const info = computeLevelInfo(state.totalXp);
   if (el.xpLevelBadge) el.xpLevelBadge.textContent = `Lv.${info.level}`;
   if (el.xpTitle) el.xpTitle.textContent = info.title;
@@ -807,6 +830,8 @@ function renderResult(passage, correctCount, details, isTimeout) {
 
 function renderResultXp(xpResult) {
   if (!el.resultXp) return;
+  el.resultXp.hidden = !window.readingUser || !xpResult;
+  if (el.resultXp.hidden) { el.resultXp.replaceChildren(); return; }
   const { xpGained, after, leveledUp } = xpResult;
   const levelUpHtml = leveledUp
     ? `<p class="result-xp-levelup">🎉 레벨 업! Lv.${after.level} &ldquo;${escapeHtml(after.title)}&rdquo; 칭호를 얻었어요!</p>`

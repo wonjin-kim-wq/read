@@ -1432,3 +1432,10 @@ mark.hl-green.hl-underline { text-decoration: underline; }
 @media (max-width: 640px) {
   .book-shelf { padding-inline: 20px; overflow-x: clip; }
 }
+
+/* hidden 상태가 flex/grid 표시 규칙보다 항상 우선한다. */
+[hidden] { display: none !important; }
+
+/* 회원은 학교급 책과 AI 태블릿만 중앙에 배치한다. */
+.book-shelf.member-shelf { grid-template-columns: repeat(2, minmax(0, 210px)); justify-content: center; }
+#sheets-title { scroll-margin-top: 24px; }
