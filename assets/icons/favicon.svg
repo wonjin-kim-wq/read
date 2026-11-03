@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>읽는 힘 — 펼친 책</title>
+  <path d="M4 17C14 14 23 16 32 22C41 16 50 14 60 17V51C49 48 40 49 32 55C24 49 15 48 4 51Z" fill="#A65E4E" stroke="#A65E4E" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M7 12C17 10 25 12 32 19C39 12 47 10 57 12V46C47 44 39 46 32 52C25 46 17 44 7 46Z" fill="#FFFEFB" stroke="#A65E4E" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M32 19V52" stroke="#A65E4E" stroke-width="2" stroke-linecap="round"/>
+  <path d="M12 20C17 19 22 20 26 23M12 27C17 26 22 27 26 30M12 34C17 33 22 34 26 37M38 23C42 20 47 19 52 20M38 30C42 27 47 26 52 27M38 37C42 34 47 33 52 34" stroke="#B8786D" stroke-width="2" stroke-linecap="round"/>
+  <path d="M45 12V24L48 21.5L51 24V11.5" fill="#537267" stroke="#537267" stroke-width="1" stroke-linejoin="round"/>
+</svg>
