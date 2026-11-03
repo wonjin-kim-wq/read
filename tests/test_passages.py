@@ -259,13 +259,14 @@ class TestIntroWiring(unittest.TestCase):
 
     def test_index_references_existing_local_assets(self):
         import re
+        from urllib.parse import urlsplit
 
         refs = re.findall(r'(?:src|href)="((?!https?:|#)[^"]+)"', self.index)
         self.assertIn("assets/js/intro.js", refs)
         self.assertIn("assets/css/intro.css", refs)
         for ref in refs:
             with self.subTest(ref=ref):
-                self.assertTrue((ROOT / ref).is_file(), f"{ref} 파일이 없음")
+                self.assertTrue((ROOT / urlsplit(ref).path).is_file(), f"{ref} 파일이 없음")
 
     def test_intro_loads_before_app(self):
         self.assertLess(
